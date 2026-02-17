@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { apiGetSafe } from "@/lib/api";
 import type { Product } from "@/lib/types";
+import HeroSlider from "./components/HeroSlider";
 
 const categories = [
   { title: "Fresh Vegetables", items: "182 items", color: "bg-emerald-100" },
@@ -33,77 +34,8 @@ export default async function Home() {
   return (
     <main>
       <section className="hero-sheen">
-        <div className="mx-auto grid w-full max-w-6xl gap-12 px-6 py-16 md:grid-cols-2 md:items-center">
-          <div className="space-y-6">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-sage shadow-sm">
-              Only this week
-            </span>
-            <h1 className="font-display text-4xl font-semibold leading-tight text-deep md:text-5xl">
-              Shopping with us for better quality and the best price.
-            </h1>
-            <p className="text-base leading-relaxed text-slate-600">
-              Your everyday grocery partner with fresh picks, local farms, and
-              same-day delivery across the city.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="/products"
-                className="rounded-full bg-sage px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-emerald-200/60"
-              >
-                Shop now
-              </a>
-              <a
-                href="#featured"
-                className="rounded-full border border-sage/20 px-6 py-3 text-sm font-semibold text-sage"
-              >
-                View deals
-              </a>
-            </div>
-            <div className="grid gap-4 pt-4 sm:grid-cols-3">
-              {[
-                { label: "Daily fresh", value: "200+" },
-                { label: "Local farms", value: "54" },
-                { label: "Avg. delivery", value: "38 min" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-amber-100/70 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm"
-                >
-                  <p className="text-lg font-semibold text-deep">
-                    {item.value}
-                  </p>
-                  <p>{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="relative">
-            <div className="absolute -right-4 top-10 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl" />
-            <div className="glass-card relative overflow-hidden rounded-3xl p-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Weekly combo
-                  </p>
-                  <p className="font-display text-2xl font-semibold text-deep">
-                    Fresh juice bundle
-                  </p>
-                </div>
-                <span className="rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-white">
-                  -25%
-                </span>
-              </div>
-              <div className="mt-8 grid grid-cols-3 items-end gap-4">
-                <div className="float-slow h-40 rounded-2xl bg-gradient-to-b from-amber-200 to-amber-50 shadow-sm" />
-                <div className="float-fast h-52 rounded-2xl bg-gradient-to-b from-rose-200 to-rose-50 shadow-sm" />
-                <div className="float-slow h-44 rounded-2xl bg-gradient-to-b from-emerald-200 to-emerald-50 shadow-sm" />
-              </div>
-              <div className="mt-8 flex items-center justify-between text-sm text-slate-500">
-                <span>Orange, beet, green detox</span>
-                <span className="font-semibold text-deep">$18.75</span>
-              </div>
-            </div>
-          </div>
+        <div className="mx-auto w-full max-w-6xl px-6 py-10 md:py-14">
+          <HeroSlider />
         </div>
       </section>
 
