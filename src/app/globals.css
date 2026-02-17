@@ -1,30 +1,100 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fff8ef;
+  --foreground: #1f2933;
+  --cream: #fff8ef;
+  --cream-strong: #fff3e0;
+  --sage: #5b8d6b;
+  --sun: #f6b93b;
+  --cherry: #f77272;
+  --deep: #1f2933;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-playfair);
+  --color-cream: var(--cream);
+  --color-cream-strong: var(--cream-strong);
+  --color-sage: var(--sage);
+  --color-sun: var(--sun);
+  --color-cherry: var(--cherry);
+  --color-deep: var(--deep);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at 10% 10%, #fff1d6 0%, transparent 45%),
+    radial-gradient(circle at 90% 15%, #e9f7ef 0%, transparent 40%),
+    radial-gradient(circle at 70% 80%, #fff0f0 0%, transparent 45%),
+    var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans);
+  font-family: var(--font-manrope);
 }
 
 a {
   text-decoration: none;
+}
+
+.font-display {
+  font-family: var(--font-playfair);
+}
+
+.hero-sheen {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 210, 109, 0.4), transparent 50%),
+    radial-gradient(circle at 80% 10%, rgba(255, 163, 163, 0.35), transparent 45%),
+    linear-gradient(130deg, rgba(255, 255, 255, 0.9), rgba(255, 246, 230, 0.9));
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 200, 140, 0.25);
+  box-shadow: 0 24px 60px rgba(61, 38, 21, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.float-slow {
+  animation: floatSlow 7s ease-in-out infinite;
+}
+
+.float-fast {
+  animation: floatFast 4.5s ease-in-out infinite;
+}
+
+.reveal-up {
+  animation: revealUp 0.8s ease both;
+}
+
+@keyframes floatSlow {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes floatFast {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
