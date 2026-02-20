@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { apiGetSafe } from "@/lib/api";
-import type { Product } from "@/lib/types";
+import type { Product, Slider } from "@/lib/types";
 import HeroSlider from "./components/HeroSlider";
 
 const categories = [
@@ -30,12 +30,16 @@ const blogs = [
 export default async function Home() {
   const productsRes = await apiGetSafe<Product[]>("/ecommerce/products?limit=8");
   const products = productsRes.data || [];
+  const sliderRes = await apiGetSafe<Slider[]>(
+    "/ecommerce/sliders/active?limit=5",
+  );
+  const sliders = sliderRes.data || [];
 
   return (
     <main>
       <section className="hero-sheen">
         <div className="mx-auto w-full max-w-6xl px-6 py-10 md:py-14">
-          <HeroSlider />
+          <HeroSlider slides={sliders} />
         </div>
       </section>
 

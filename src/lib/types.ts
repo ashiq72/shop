@@ -36,3 +36,13 @@ export type ReviewSummary = {
   average: number;
   breakdown: Array<{ rating: number; count: number }>;
 };
+
+export type Slider = {
+  _id?: string;
+  title: string;
+  subtitle?: string;
+  image: string;
+  link?: string;
+  buttonText?: string;
+  priority?: number;
+};
