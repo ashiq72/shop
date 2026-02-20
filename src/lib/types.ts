@@ -48,3 +48,8 @@ export type Slider = {
   buttonText?: string;
   priority?: number;
 };
+
+export type Branding = {
+  logoDesktop?: string;
+  logoMobile?: string;
+};
