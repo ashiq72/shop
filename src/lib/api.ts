@@ -1,8 +1,14 @@
 import { cache } from "react";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
-const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "";
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.API_BASE_URL ||
+  process.env.VITE_API_URL ||
+  "http://localhost:5000/api/v1";
+const TENANT_ID =
+  process.env.NEXT_PUBLIC_TENANT_ID ||
+  process.env.TENANT_ID ||
+  "";
 
 export type ApiMeta = {
   page: number;

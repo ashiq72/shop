@@ -1,15 +1,15 @@
 import Image from "next/image";
 import { apiGetSafe } from "@/lib/api";
-import type { Product } from "@/lib/types";
+import type { Category, Product, Slider } from "@/lib/types";
 import HeroSlider from "./components/HeroSlider";
 
-const categories = [
-  { title: "Fresh Vegetables", items: "182 items", color: "bg-emerald-100" },
-  { title: "Organic Fruits", items: "124 items", color: "bg-amber-100" },
-  { title: "Dairy & Eggs", items: "86 items", color: "bg-sky-100" },
-  { title: "Bakery", items: "56 items", color: "bg-rose-100" },
-  { title: "Meat & Seafood", items: "94 items", color: "bg-orange-100" },
-  { title: "Beverages", items: "102 items", color: "bg-teal-100" },
+const categoryColors = [
+  "bg-emerald-100",
+  "bg-amber-100",
+  "bg-sky-100",
+  "bg-rose-100",
+  "bg-orange-100",
+  "bg-teal-100",
 ];
 
 const blogs = [
@@ -30,12 +30,20 @@ const blogs = [
 export default async function Home() {
   const productsRes = await apiGetSafe<Product[]>("/ecommerce/products?limit=8");
   const products = productsRes.data || [];
+  const sliderRes = await apiGetSafe<Slider[]>(
+    "/ecommerce/sliders/active?limit=5",
+  );
+  const sliders = sliderRes.data || [];
+  const categoriesRes = await apiGetSafe<Category[]>(
+    "/ecommerce/categories?limit=6&status=active&parent=root",
+  );
+  const categories = categoriesRes.data || [];
 
   return (
     <main>
       <section className="hero-sheen">
         <div className="mx-auto w-full max-w-6xl px-6 py-10 md:py-14">
-          <HeroSlider />
+          <HeroSlider slides={sliders} />
         </div>
       </section>
 
@@ -49,28 +57,47 @@ export default async function Home() {
               Popular categories
             </h2>
           </div>
-          <a href="/products" className="text-sm font-semibold text-sage">
+          <a href="/categories" className="text-sm font-semibold text-sage">
             Browse all categories
           </a>
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <div
-              key={category.title}
-              className="flex items-center justify-between rounded-2xl border border-amber-100/70 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-1"
-            >
-              <div>
-                <h3 className="text-base font-semibold text-deep">
-                  {category.title}
-                </h3>
-                <p className="text-sm text-slate-500">{category.items}</p>
-              </div>
-              <span
-                className={`h-12 w-12 rounded-2xl ${category.color} shadow-inner`}
-              />
-            </div>
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <div className="mt-6 rounded-2xl border border-amber-100/70 bg-white px-6 py-8 text-sm text-slate-500">
+            No categories found yet.
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {categories.map((category, index) => {
+              const color = categoryColors[index % categoryColors.length];
+              return (
+                <div
+                  key={category._id}
+                  className="flex items-center justify-between rounded-2xl border border-amber-100/70 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-1"
+                >
+                  <div>
+                    <h3 className="text-base font-semibold text-deep">
+                      {category.name}
+                    </h3>
+                    <p className="text-sm text-slate-500">Browse items</p>
+                  </div>
+                  {category.image ? (
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      width={56}
+                      height={56}
+                      className="h-14 w-14 rounded-2xl object-cover shadow-inner"
+                    />
+                  ) : (
+                    <span
+                      className={`h-12 w-12 rounded-2xl ${color} shadow-inner`}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section id="search" className="mx-auto w-full max-w-6xl px-6 pb-14">

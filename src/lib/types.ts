@@ -2,6 +2,8 @@ export type Category = {
   _id: string;
   name: string;
   slug: string;
+  image?: string;
+  children?: Category[];
 };
 
 export type ProductVariant = {
@@ -35,4 +37,14 @@ export type ReviewSummary = {
   total: number;
   average: number;
   breakdown: Array<{ rating: number; count: number }>;
+};
+
+export type Slider = {
+  _id?: string;
+  title: string;
+  subtitle?: string;
+  image: string;
+  link?: string;
+  buttonText?: string;
+  priority?: number;
 };

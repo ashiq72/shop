@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import type { Slider } from "@/lib/types";
 
-const slides = [
+type HeroSlide = Slider & { badge?: string };
+
+const fallbackSlides: HeroSlide[] = [
   {
     title: "Shopping with us for better quality and the best price.",
-    subtitle: "Fresh picks, local farms, and same-day delivery across the city.",
+    subtitle:
+      "Fresh picks, local farms, and same-day delivery across the city.",
     image: "/hero-1.svg",
     badge: "Only this week",
   },
@@ -24,21 +28,32 @@ const slides = [
   },
 ];
 
-export default function HeroSlider() {
+type HeroSliderProps = {
+  slides?: Slider[];
+};
+
+export default function HeroSlider({ slides }: HeroSliderProps) {
+  const items = useMemo<HeroSlide[]>(
+    () => (slides && slides.length ? slides : fallbackSlides),
+    [slides],
+  );
   const [active, setActive] = useState(0);
 
   useEffect(() => {
+    if (items.length < 2) {
+      return;
+    }
     const interval = setInterval(() => {
-      setActive((prev) => (prev + 1) % slides.length);
+      setActive((prev) => (prev + 1) % items.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [items.length]);
 
   return (
-    <div className="relative h-[420px] overflow-hidden rounded-3xl border border-amber-100/70 bg-white shadow-sm md:h-[460px]">
-      {slides.map((slide, index) => (
+    <div className="relative h-105 overflow-hidden rounded-3xl border border-amber-100/70 bg-white shadow-sm md:h-115">
+      {items.map((slide, index) => (
         <div
-          key={slide.title}
+          key={slide._id || slide.title}
           className={`absolute inset-0 transition-opacity duration-700 ${
             index === active ? "opacity-100" : "opacity-0"
           }`}
@@ -51,36 +66,10 @@ export default function HeroSlider() {
             className="object-cover"
             priority={index === 0}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-white/10" />
-          <div className="relative z-10 flex h-full max-w-[60%] flex-col justify-center px-8 py-10">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-sage shadow-sm">
-              {slide.badge}
-            </span>
-            <h2 className="font-display mt-4 text-3xl font-semibold leading-tight text-deep md:text-4xl">
-              {slide.title}
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
-              {slide.subtitle}
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href="/products"
-                className="rounded-full bg-sage px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-emerald-200/60"
-              >
-                Shop now
-              </a>
-              <a
-                href="#featured"
-                className="rounded-full border border-sage/20 px-6 py-3 text-sm font-semibold text-sage"
-              >
-                View deals
-              </a>
-            </div>
-          </div>
         </div>
       ))}
       <div className="absolute bottom-5 left-8 z-10 flex items-center gap-2">
-        {slides.map((_, index) => (
+        {items.map((_, index) => (
           <button
             key={`dot-${index}`}
             onClick={() => setActive(index)}
@@ -94,7 +83,7 @@ export default function HeroSlider() {
       <div className="absolute bottom-5 right-6 z-10 flex items-center gap-2">
         <button
           onClick={() =>
-            setActive((prev) => (prev - 1 + slides.length) % slides.length)
+            setActive((prev) => (prev - 1 + items.length) % items.length)
           }
           className="grid h-10 w-10 place-items-center rounded-full border border-amber-100/70 bg-white text-slate-600 shadow-sm hover:bg-amber-50"
           aria-label="Previous slide"
@@ -110,7 +99,7 @@ export default function HeroSlider() {
           </svg>
         </button>
         <button
-          onClick={() => setActive((prev) => (prev + 1) % slides.length)}
+          onClick={() => setActive((prev) => (prev + 1) % items.length)}
           className="grid h-10 w-10 place-items-center rounded-full border border-amber-100/70 bg-white text-slate-600 shadow-sm hover:bg-amber-50"
           aria-label="Next slide"
         >
