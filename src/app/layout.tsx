@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Playfair_Display, Manrope } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import Image from "next/image";
 import { apiGetSafe } from "@/lib/api";
-import type { Category } from "@/lib/types";
+import type { Branding, Category } from "@/lib/types";
 
 const bodyFont = Manrope({
   variable: "--font-manrope",
@@ -30,6 +31,10 @@ export default async function RootLayout({
     "/ecommerce/categories/tree",
   );
   const categories = categoriesRes.data || [];
+  const brandingRes = await apiGetSafe<Branding>("/ecommerce/branding");
+  const branding = brandingRes.data || null;
+  const desktopLogo = branding?.logoDesktop || branding?.logoMobile || "";
+  const mobileLogo = branding?.logoMobile || branding?.logoDesktop || "";
   const rootCategories = categories.slice(0, 6);
 
   return (
@@ -58,12 +63,40 @@ export default async function RootLayout({
 
             <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-6 py-4">
               <Link href="/" className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-deep text-lg font-semibold text-white shadow-sm">
-                  G
-                </span>
-                <span className="text-xl font-semibold tracking-tight">
-                  GroceryGo
-                </span>
+                {mobileLogo || desktopLogo ? (
+                  <>
+                    {mobileLogo ? (
+                      <Image
+                        src={mobileLogo}
+                        alt="Logo"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-full object-contain md:hidden"
+                      />
+                    ) : null}
+                    {desktopLogo ? (
+                      <Image
+                        src={desktopLogo}
+                        alt="Logo"
+                        width={120}
+                        height={40}
+                        className="hidden h-10 w-auto object-contain md:block"
+                      />
+                    ) : null}
+                    <span className="text-xl font-semibold tracking-tight md:hidden">
+                      GroceryGo
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="grid h-10 w-10 place-items-center rounded-full bg-deep text-lg font-semibold text-white shadow-sm">
+                      G
+                    </span>
+                    <span className="text-xl font-semibold tracking-tight">
+                      GroceryGo
+                    </span>
+                  </>
+                )}
               </Link>
 
               <nav className="hidden items-center gap-6 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700 md:flex">
