@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import type { Slider } from "@/lib/types";
 
-const fallbackSlides = [
+type HeroSlide = Slider & { badge?: string };
+
+const fallbackSlides: HeroSlide[] = [
   {
     title: "Shopping with us for better quality and the best price.",
-    subtitle: "Fresh picks, local farms, and same-day delivery across the city.",
+    subtitle:
+      "Fresh picks, local farms, and same-day delivery across the city.",
     image: "/hero-1.svg",
     badge: "Only this week",
   },
@@ -30,7 +33,7 @@ type HeroSliderProps = {
 };
 
 export default function HeroSlider({ slides }: HeroSliderProps) {
-  const items = useMemo(
+  const items = useMemo<HeroSlide[]>(
     () => (slides && slides.length ? slides : fallbackSlides),
     [slides],
   );
@@ -38,7 +41,6 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
 
   useEffect(() => {
     if (items.length < 2) {
-      setActive(0);
       return;
     }
     const interval = setInterval(() => {
@@ -48,7 +50,7 @@ export default function HeroSlider({ slides }: HeroSliderProps) {
   }, [items.length]);
 
   return (
-    <div className="relative h-[420px] overflow-hidden rounded-3xl border border-amber-100/70 bg-white shadow-sm md:h-[460px]">
+    <div className="relative h-105 overflow-hidden rounded-3xl border border-amber-100/70 bg-white shadow-sm md:h-115">
       {items.map((slide, index) => (
         <div
           key={slide._id || slide.title}

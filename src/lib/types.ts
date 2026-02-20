@@ -2,6 +2,8 @@ export type Category = {
   _id: string;
   name: string;
   slug: string;
+  image?: string;
+  children?: Category[];
 };
 
 export type ProductVariant = {

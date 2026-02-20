@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Playfair_Display, Manrope } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import { apiGetSafe } from "@/lib/api";
+import type { Category } from "@/lib/types";
 
 const bodyFont = Manrope({
   variable: "--font-manrope",
@@ -19,11 +21,17 @@ export const metadata: Metadata = {
   description: "Fresh groceries, fast delivery, and weekly deals.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const categoriesRes = await apiGetSafe<Category[]>(
+    "/ecommerce/categories/tree",
+  );
+  const categories = categoriesRes.data || [];
+  const rootCategories = categories.slice(0, 6);
+
   return (
     <html lang="en">
       <body
@@ -31,8 +39,8 @@ export default function RootLayout({
         className={`${bodyFont.variable} ${displayFont.variable} antialiased bg-cream text-slate-900`}
       >
         <div className="min-h-screen">
-          <header className="sticky top-0 z-50 border-b border-amber-100/60 bg-white/80 backdrop-blur">
-            <div className="border-b border-amber-100/60 bg-amber-50/70">
+          <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
+            <div className="border-b border-slate-200 bg-white">
               <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-2 text-xs text-slate-600">
                 <div className="flex flex-wrap items-center gap-4">
                   <span className="inline-flex items-center gap-2">
@@ -47,67 +55,120 @@ export default function RootLayout({
                 </div>
               </div>
             </div>
-            <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+
+            <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-6 py-4">
               <Link href="/" className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-amber-400 text-lg font-semibold text-white shadow-sm">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-deep text-lg font-semibold text-white shadow-sm">
                   G
                 </span>
-                <span className="text-lg font-semibold tracking-tight">
+                <span className="text-xl font-semibold tracking-tight">
                   GroceryGo
                 </span>
               </Link>
-              <nav className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
-                <Link href="/" className="hover:text-slate-900">
-                  Home
-                </Link>
-                <Link href="/#categories" className="hover:text-slate-900">
-                  Category
-                </Link>
-                <Link href="/#search" className="hover:text-slate-900">
-                  Search
-                </Link>
-                <Link href="/#gallery" className="hover:text-slate-900">
-                  Gallery
-                </Link>
-                <Link href="/#blogs" className="hover:text-slate-900">
-                  Blogs
-                </Link>
-                <Link href="/#contact" className="hover:text-slate-900">
-                  Contact Us
-                </Link>
+
+              <nav className="hidden items-center gap-6 text-xs font-semibold uppercase tracking-[0.2em] text-slate-700 md:flex">
+                {rootCategories.map((category) => (
+                  <div key={category._id} className="group relative">
+                    <Link
+                      href={`/products?category=${category.slug}`}
+                      className="transition hover:text-slate-900"
+                    >
+                      {category.name}
+                    </Link>
+                    {category.children && category.children.length > 0 ? (
+                      <div className="absolute left-0 top-full z-50 hidden min-w-[220px] rounded-md border border-slate-200 bg-white p-3 shadow-lg group-hover:block">
+                        <div className="grid gap-2">
+                          {category.children.map((child) => (
+                            <Link
+                              key={child._id}
+                              href={`/products?category=${child.slug}`}
+                              className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600 transition hover:text-slate-900"
+                            >
+                              {child.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
               </nav>
-              <div className="flex items-center gap-3">
-                <button className="hidden rounded-full border border-amber-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-amber-50 md:inline-flex">
-                  USD
-                </button>
-                <button className="relative grid h-10 w-10 place-items-center rounded-full border border-amber-200 text-slate-700 hover:bg-amber-50">
-                  <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-amber-400 text-[10px] font-semibold text-white">
-                    0
-                  </span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+
+              <div className="ml-auto hidden w-[220px] items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 md:flex">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-3.5-3.5" />
+                </svg>
+                <span>Search</span>
+              </div>
+
+              <div className="flex items-center gap-6">
+                {[
+                  { label: "Stores", icon: "pin" },
+                  { label: "Profile", icon: "user" },
+                  { label: "Wishlist", icon: "heart" },
+                  { label: "Bag", icon: "bag" },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    className="flex flex-col items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-slate-900"
                   >
-                    <path d="M6 6h15l-1.5 9h-12z" />
-                    <circle cx="9" cy="20" r="1.5" />
-                    <circle cx="18" cy="20" r="1.5" />
-                  </svg>
-                </button>
-                <button className="grid h-10 w-10 place-items-center rounded-full border border-amber-200 text-slate-700 hover:bg-amber-50">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </button>
+                    {item.icon === "pin" && (
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        <path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11z" />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                    )}
+                    {item.icon === "user" && (
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        <circle cx="12" cy="8" r="3.5" />
+                        <path d="M4 20a8 8 0 0 1 16 0" />
+                      </svg>
+                    )}
+                    {item.icon === "heart" && (
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        <path d="M20.8 7.6a4.6 4.6 0 0 0-8.1-2.7L12 5.7l-.7-.8a4.6 4.6 0 0 0-8.1 2.7c0 5 8.8 10.6 8.8 10.6s8.8-5.6 8.8-10.6z" />
+                      </svg>
+                    )}
+                    {item.icon === "bag" && (
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                      >
+                        <path d="M6 7h12l-1 13H7z" />
+                        <path d="M9 7a3 3 0 1 1 6 0" />
+                      </svg>
+                    )}
+                    <span>{item.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </header>
