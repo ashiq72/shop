@@ -2,6 +2,7 @@ import Image from "next/image";
 import { apiGetSafe } from "@/lib/api";
 import type { Category, Product, Slider } from "@/lib/types";
 import HeroSlider from "./components/HeroSlider";
+import ProductCard from "@/app/components/ProductCard";
 
 const categoryColors = [
   "bg-emerald-100",
@@ -143,42 +144,12 @@ export default async function Home() {
         </div>
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
-            <a
+            <ProductCard
               key={product._id}
-              href={`/products/${product._id}`}
-              className="group rounded-3xl border border-amber-100/70 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="relative overflow-hidden rounded-2xl bg-cream-strong">
-                <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-semibold text-white">
-                  Fresh
-                </span>
-                <Image
-                  src={product.thumbnail || "/next.svg"}
-                  alt={product.name}
-                  width={400}
-                  height={400}
-                  className="h-40 w-full object-cover transition duration-300 group-hover:scale-105"
-                />
-              </div>
-              <div className="mt-4 space-y-2">
-                <h3 className="text-base font-semibold text-deep">
-                  {product.name}
-                </h3>
-                <p className="text-sm text-slate-500">
-                  {product.brand || "GroceryGo"}
-                </p>
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <span className="text-deep">
-                    ${product.salePrice ?? product.price}
-                  </span>
-                  {product.salePrice && (
-                    <span className="text-slate-400 line-through">
-                      ${product.price}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </a>
+              product={product}
+              badge="Fresh"
+              className="rounded-3xl border-amber-100/70 bg-white shadow-sm"
+            />
           ))}
         </div>
       </section>
