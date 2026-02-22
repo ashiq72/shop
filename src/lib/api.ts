@@ -39,7 +39,9 @@ export const apiGet = cache(async <T>(path: string) => {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`API request failed: ${res.status} ${body}`);
+    throw new Error(
+      `API request failed: ${res.status} ${path} ${body}`,
+    );
   }
   return (await res.json()) as ApiResponse<T>;
 });
