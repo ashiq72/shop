@@ -4,6 +4,7 @@ import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import type { Product, ReviewSummary } from "@/lib/types";
 import AddToCart from "@/app/components/AddToCart";
+import WishlistButton from "@/app/components/WishlistButton";
 
 const formatMoney = (amount: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", {
@@ -176,13 +177,14 @@ export default async function ProductDetail({ params }: PageProps) {
           </div>
 
           <AddToCart product={product} />
+          <WishlistButton product={product} />
 
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              "Fresh delivery in 30-45 mins",
-              "Cold chain storage",
-              "Hand-picked quality",
-              "Easy returns within 7 days",
+              "Delivery options calculated at checkout",
+              "Inventory checked when your order is placed",
+              "Tenant-secured order processing",
+              "Support details available in the store footer",
             ].map((item) => (
               <div
                 key={item}
@@ -266,7 +268,7 @@ export default async function ProductDetail({ params }: PageProps) {
               </p>
               <ul className="mt-2 grid gap-2 text-sm text-slate-600">
                 {features.map((feature) => (
-                  <li key={feature}>• {feature}</li>
+                  <li key={feature}>- {feature}</li>
                 ))}
               </ul>
             </div>
@@ -311,10 +313,10 @@ export default async function ProductDetail({ params }: PageProps) {
             Shipping and returns
           </h2>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>Fast delivery in major cities within 30-45 minutes.</li>
-            <li>Schedule deliveries for your preferred time slot.</li>
-            <li>Easy returns within 7 days for unopened items.</li>
-            <li>Support team available 7 days a week.</li>
+            <li>Available carriers and rates are shown for your country.</li>
+            <li>Delivery estimates are configured by the store team.</li>
+            <li>Stock and delivery prices are verified before order creation.</li>
+            <li>Contact the store directly for return eligibility.</li>
           </ul>
         </div>
       </div>

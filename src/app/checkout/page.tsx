@@ -1,31 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Banknote,
+  Check,
+  CreditCard,
+  MapPin,
+  PackageCheck,
+  ShieldCheck,
+  Truck,
+} from "lucide-react";
 import { useCart } from "@/app/components/CartProvider";
-import { apiPost } from "@/lib/clientApi";
+import { apiGetClient, apiPost } from "@/lib/clientApi";
+import type { CheckoutQuote, ShippingMethod } from "@/lib/types";
 
-const formatMoney = (amount: number, currency = "USD") => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(amount);
-};
+const formatMoney = (amount: number, currency = "USD") =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
 
 const countries = ["Bangladesh", "United States", "Canada", "United Kingdom"];
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart, ready } = useCart();
   const currency = items[0]?.currency || "USD";
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [line1, setLine1] = useState("");
-  const [city, setCity] = useState("");
-  const [country, setCountry] = useState(countries[0]);
+  const [contact, setContact] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
+  const [address, setAddress] = useState({
+    line1: "",
+    line2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: countries[0],
+  });
+  const [billingSame, setBillingSame] = useState(true);
+  const [billing, setBilling] = useState({ line1: "", city: "", country: countries[0] });
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [shippingMethodId, setShippingMethodId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cash_on_delivery" | "bank_transfer"
+  >("cash_on_delivery");
+  const [campaignCode, setCampaignCode] = useState("");
+  const [appliedCode, setAppliedCode] = useState("");
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [loadingMethods, setLoadingMethods] = useState(false);
+  const [quoting, setQuoting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [campaignError, setCampaignError] = useState("");
+  const [success, setSuccess] = useState<{ number?: string; total?: number } | null>(
+    null,
+  );
 
   const orderItems = useMemo(
     () =>
@@ -37,43 +67,120 @@ export default function CheckoutPage() {
     [items],
   );
 
+  useEffect(() => {
+    if (!ready || !items.length) return;
+    let active = true;
+    setLoadingMethods(true);
+    apiGetClient<ShippingMethod[]>("/ecommerce/shipping-methods/available", {
+      country: address.country,
+      subtotal,
+    })
+      .then((response) => {
+        if (!active) return;
+        const methods = response.data || [];
+        setShippingMethods(methods);
+        setShippingMethodId((current) =>
+          methods.some((method) => method._id === current)
+            ? current
+            : methods[0]?._id || "",
+        );
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : "Delivery options failed");
+      })
+      .finally(() => {
+        if (active) setLoadingMethods(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [address.country, items.length, ready, subtotal]);
+
+  useEffect(() => {
+    if (!shippingMethodId || !orderItems.length) {
+      setQuote(null);
+      return;
+    }
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setQuoting(true);
+      setCampaignError("");
+      apiPost<CheckoutQuote>("/ecommerce/orders/quote", {
+        items: orderItems,
+        country: address.country,
+        shippingMethodId,
+        campaignCode: appliedCode || undefined,
+      })
+        .then((response) => {
+          if (active) setQuote(response.data);
+        })
+        .catch((err: unknown) => {
+          if (!active) return;
+          setQuote(null);
+          const message = err instanceof Error ? err.message : "Quote failed";
+          if (appliedCode) setCampaignError(message);
+          else setError(message);
+        })
+        .finally(() => {
+          if (active) setQuoting(false);
+        });
+    }, 250);
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [address.country, appliedCode, orderItems, shippingMethodId]);
+
+  const applyCampaign = () => {
+    setCampaignError("");
+    setAppliedCode(campaignCode.trim().toUpperCase());
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
-    setSuccess("");
-
-    if (!items.length) {
-      setError("Your cart is empty.");
+    if (!quote || !shippingMethodId) {
+      setError("Choose a delivery method and wait for the order total.");
+      return;
+    }
+    if (!contact.name || !contact.email || !contact.phone) {
+      setError("Complete your contact information.");
+      return;
+    }
+    if (!address.line1 || !address.city || !address.country) {
+      setError("Complete your delivery address.");
+      return;
+    }
+    if (!billingSame && (!billing.line1 || !billing.city || !billing.country)) {
+      setError("Complete your billing address.");
       return;
     }
 
-    if (!name || !email || !line1 || !city || !country) {
-      setError("Please fill in all required fields.");
-      return;
-    }
+    const shippingAddress = { ...contact, ...address };
+    const billingAddress = billingSame
+      ? shippingAddress
+      : { ...contact, ...billing };
 
     setLoading(true);
     try {
-      const payload = {
-        items: orderItems,
-        customer: { name, email, phone },
-        shippingAddress: { name, email, phone, line1, city, country },
-        billingAddress: { name, email, phone, line1, city, country },
-      };
-
-      const response = await apiPost<{ orderNumber?: string }>(
+      const response = await apiPost<{ orderNumber?: string; total?: number }>(
         "/ecommerce/orders/guest",
-        payload,
+        {
+          items: orderItems,
+          customer: contact,
+          shippingAddress,
+          billingAddress,
+          shippingMethodId,
+          campaignCode: appliedCode || undefined,
+          paymentMethod,
+        },
       );
-
+      setSuccess({
+        number: response.data?.orderNumber,
+        total: response.data?.total,
+      });
       clearCart();
-      setSuccess(
-        response.data?.orderNumber
-          ? `Order placed: ${response.data.orderNumber}`
-          : "Order placed successfully",
-      );
     } catch (err: unknown) {
-      console.error(err);
       setError(err instanceof Error ? err.message : "Failed to place order");
     } finally {
       setLoading(false);
@@ -81,10 +188,24 @@ export default function CheckoutPage() {
   };
 
   if (!ready) {
+    return <main className="checkout-loading">Preparing secure checkout...</main>;
+  }
+
+  if (success) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-6 py-12">
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center">
-          Loading checkout...
+      <main className="checkout-success store-shell">
+        <div>
+          <BadgeCheck size={52} />
+          <p>Order confirmed</p>
+          <h1>Thank you for your order.</h1>
+          <span>
+            {success.number ? `Order ${success.number}` : "Your order was created"}
+            {success.total !== undefined
+              ? ` for ${formatMoney(success.total, currency)}`
+              : ""}
+            .
+          </span>
+          <Link href="/products">Continue shopping</Link>
         </div>
       </main>
     );
@@ -92,136 +213,371 @@ export default function CheckoutPage() {
 
   if (!items.length) {
     return (
-      <main className="mx-auto w-full max-w-3xl px-6 py-16">
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center">
-          <h1 className="text-2xl font-semibold">Your cart is empty</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Add items to your cart before checking out.
-          </p>
-          <Link
-            href="/products"
-            className="mt-6 inline-flex rounded-full bg-deep px-6 py-3 text-sm font-semibold text-white"
-          >
-            Browse products
-          </Link>
-        </div>
+      <main className="checkout-empty store-shell">
+        <PackageCheck size={42} />
+        <h1>Your bag is empty</h1>
+        <p>Add a few products before starting checkout.</p>
+        <Link href="/products">Browse products</Link>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-12">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <main className="checkout-page store-shell">
+      <div className="checkout-title">
         <div>
-          <h1 className="text-2xl font-semibold">Checkout</h1>
-          <p className="text-sm text-slate-500">Confirm delivery details.</p>
+          <Link href="/cart">
+            <ArrowLeft size={16} />
+            Return to bag
+          </Link>
+          <h1>Checkout</h1>
+          <p>Delivery and totals are verified securely before your order is placed.</p>
         </div>
-        <Link href="/cart" className="text-sm font-semibold text-slate-500">
-          Back to cart
-        </Link>
+        <span>
+          <ShieldCheck size={18} />
+          Secure tenant checkout
+        </span>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5"
-        >
-          <h2 className="text-lg font-semibold">Shipping details</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Full name"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              required
-            />
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              type="email"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              required
-            />
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
-            <input
-              value={line1}
-              onChange={(e) => setLine1(e.target.value)}
-              placeholder="Address line"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              required
-            />
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder="City"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              required
-            />
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            >
-              {countries.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
+      <form onSubmit={handleSubmit} className="checkout-layout">
+        <div className="checkout-flow">
+          <section className="checkout-section">
+            <div className="checkout-section-title">
+              <span>1</span>
+              <div>
+                <h2>Contact</h2>
+                <p>We use this for delivery updates.</p>
+              </div>
+            </div>
+            <div className="checkout-fields">
+              <label>
+                Full name
+                <input
+                  value={contact.name}
+                  onChange={(event) =>
+                    setContact((current) => ({ ...current, name: event.target.value }))
+                  }
+                  autoComplete="name"
+                  required
+                />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={contact.email}
+                  onChange={(event) =>
+                    setContact((current) => ({ ...current, email: event.target.value }))
+                  }
+                  autoComplete="email"
+                  required
+                />
+              </label>
+              <label>
+                Phone
+                <input
+                  value={contact.phone}
+                  onChange={(event) =>
+                    setContact((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  autoComplete="tel"
+                  required
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="checkout-section">
+            <div className="checkout-section-title">
+              <span>2</span>
+              <div>
+                <h2>Delivery address</h2>
+                <p>Choose the country first to see eligible logistics.</p>
+              </div>
+            </div>
+            <div className="checkout-fields">
+              <label className="field-wide">
+                Address
+                <input
+                  value={address.line1}
+                  onChange={(event) =>
+                    setAddress((current) => ({ ...current, line1: event.target.value }))
+                  }
+                  autoComplete="address-line1"
+                  required
+                />
+              </label>
+              <label className="field-wide">
+                Apartment, suite, or unit
+                <input
+                  value={address.line2}
+                  onChange={(event) =>
+                    setAddress((current) => ({ ...current, line2: event.target.value }))
+                  }
+                  autoComplete="address-line2"
+                />
+              </label>
+              <label>
+                City
+                <input
+                  value={address.city}
+                  onChange={(event) =>
+                    setAddress((current) => ({ ...current, city: event.target.value }))
+                  }
+                  required
+                />
+              </label>
+              <label>
+                State or district
+                <input
+                  value={address.state}
+                  onChange={(event) =>
+                    setAddress((current) => ({ ...current, state: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Postal code
+                <input
+                  value={address.postalCode}
+                  onChange={(event) =>
+                    setAddress((current) => ({
+                      ...current,
+                      postalCode: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Country
+                <select
+                  value={address.country}
+                  onChange={(event) =>
+                    setAddress((current) => ({ ...current, country: event.target.value }))
+                  }
+                >
+                  {countries.map((country) => (
+                    <option key={country}>{country}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="checkout-section">
+            <div className="checkout-section-title">
+              <span>3</span>
+              <div>
+                <h2>Delivery method</h2>
+                <p>Rates and estimates come from the store logistics settings.</p>
+              </div>
+            </div>
+            <div className="shipping-options">
+              {loadingMethods ? <p>Loading delivery options...</p> : null}
+              {!loadingMethods && !shippingMethods.length ? (
+                <p>No delivery method is available for this country.</p>
+              ) : null}
+              {shippingMethods.map((method) => (
+                <label
+                  key={method._id}
+                  className={
+                    shippingMethodId === method._id
+                      ? "shipping-option selected"
+                      : "shipping-option"
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="shippingMethod"
+                    value={method._id}
+                    checked={shippingMethodId === method._id}
+                    onChange={() => setShippingMethodId(method._id)}
+                  />
+                  <Truck size={20} />
+                  <span>
+                    <strong>{method.name}</strong>
+                    <small>
+                      {method.description ||
+                        `${method.minDeliveryDays}-${method.maxDeliveryDays} business days`}
+                    </small>
+                  </span>
+                  <b>
+                    {method.calculatedPrice === 0
+                      ? "Free"
+                      : formatMoney(method.calculatedPrice, currency)}
+                  </b>
+                </label>
               ))}
-            </select>
-          </div>
+            </div>
+          </section>
 
-          {error ? <p className="text-xs text-red-500">{error}</p> : null}
-          {success ? <p className="text-xs text-emerald-600">{success}</p> : null}
+          <section className="checkout-section">
+            <div className="checkout-section-title">
+              <span>4</span>
+              <div>
+                <h2>Payment</h2>
+                <p>Select how this order will be paid.</p>
+              </div>
+            </div>
+            <div className="payment-options">
+              <label className={paymentMethod === "cash_on_delivery" ? "selected" : ""}>
+                <input
+                  type="radio"
+                  name="payment"
+                  checked={paymentMethod === "cash_on_delivery"}
+                  onChange={() => setPaymentMethod("cash_on_delivery")}
+                />
+                <Banknote size={20} />
+                <span>
+                  <strong>Cash on delivery</strong>
+                  <small>Pay when your order arrives</small>
+                </span>
+              </label>
+              <label className={paymentMethod === "bank_transfer" ? "selected" : ""}>
+                <input
+                  type="radio"
+                  name="payment"
+                  checked={paymentMethod === "bank_transfer"}
+                  onChange={() => setPaymentMethod("bank_transfer")}
+                />
+                <CreditCard size={20} />
+                <span>
+                  <strong>Bank transfer</strong>
+                  <small>Payment instructions follow confirmation</small>
+                </span>
+              </label>
+            </div>
+            <label className="billing-toggle">
+              <input
+                type="checkbox"
+                checked={billingSame}
+                onChange={(event) => setBillingSame(event.target.checked)}
+              />
+              Billing address is the same as delivery
+            </label>
+            {!billingSame ? (
+              <div className="checkout-fields billing-fields">
+                <label className="field-wide">
+                  Billing address
+                  <input
+                    value={billing.line1}
+                    onChange={(event) =>
+                      setBilling((current) => ({ ...current, line1: event.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  City
+                  <input
+                    value={billing.city}
+                    onChange={(event) =>
+                      setBilling((current) => ({ ...current, city: event.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  Country
+                  <select
+                    value={billing.country}
+                    onChange={(event) =>
+                      setBilling((current) => ({
+                        ...current,
+                        country: event.target.value,
+                      }))
+                    }
+                  >
+                    {countries.map((country) => (
+                      <option key={country}>{country}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+          </section>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-deep px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-          >
-            {loading ? "Placing order..." : "Place order"}
-          </button>
-        </form>
-
-        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
-          <h2 className="text-lg font-semibold">Order summary</h2>
-          <div className="space-y-3 text-sm">
+        <aside className="checkout-summary">
+          <h2>Order summary</h2>
+          <div className="checkout-items">
             {items.map((item) => (
-              <div key={item.key} className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-slate-800">{item.name}</p>
-                  <p className="text-xs text-slate-500">
+              <div key={item.key}>
+                <span>
+                  <strong>{item.name}</strong>
+                  <small>
                     Qty {item.quantity}
                     {item.variantSku ? ` / ${item.variantSku}` : ""}
-                  </p>
-                </div>
-                <span className="font-semibold">
-                  {formatMoney(item.price * item.quantity, item.currency || currency)}
+                  </small>
                 </span>
+                <b>{formatMoney(item.price * item.quantity, item.currency)}</b>
               </div>
             ))}
           </div>
-          <div className="border-t border-slate-200 pt-3 space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold">{formatMoney(subtotal, currency)}</span>
+
+          <div className="campaign-code">
+            <label htmlFor="campaignCode">Campaign code</label>
+            <div>
+              <input
+                id="campaignCode"
+                value={campaignCode}
+                onChange={(event) => setCampaignCode(event.target.value)}
+                placeholder="SAVE10"
+              />
+              <button type="button" onClick={applyCampaign} disabled={!campaignCode.trim()}>
+                Apply
+              </button>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500">Shipping</span>
-              <span className="font-semibold">Calculated after order</span>
+            {quote?.campaign ? (
+              <p className="campaign-applied">
+                <Check size={14} />
+                {quote.campaign.name} applied
+              </p>
+            ) : null}
+            {campaignError ? <p className="checkout-error">{campaignError}</p> : null}
+          </div>
+
+          <dl className="checkout-totals">
+            <div>
+              <dt>Subtotal</dt>
+              <dd>{formatMoney(quote?.subtotal ?? subtotal, currency)}</dd>
             </div>
-          </div>
-          <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
-            <span className="text-sm font-semibold">Total</span>
-            <span className="text-lg font-semibold">{formatMoney(subtotal, currency)}</span>
-          </div>
-        </div>
-      </div>
+            <div>
+              <dt>Delivery</dt>
+              <dd>
+                {quoting
+                  ? "Calculating..."
+                  : quote
+                    ? quote.shipping === 0
+                      ? "Free"
+                      : formatMoney(quote.shipping, currency)
+                    : "Select method"}
+              </dd>
+            </div>
+            {quote?.discount ? (
+              <div className="discount">
+                <dt>Discount</dt>
+                <dd>-{formatMoney(quote.discount, currency)}</dd>
+              </div>
+            ) : null}
+            <div className="total">
+              <dt>Total</dt>
+              <dd>{formatMoney(quote?.total ?? subtotal, currency)}</dd>
+            </div>
+          </dl>
+
+          {error ? <p className="checkout-error">{error}</p> : null}
+          <button
+            type="submit"
+            className="place-order-button"
+            disabled={loading || quoting || !quote}
+          >
+            {loading ? "Placing order..." : "Place order"}
+          </button>
+          <p className="checkout-assurance">
+            <MapPin size={15} />
+            Delivery availability and price are rechecked when you order.
+          </p>
+        </aside>
+      </form>
     </main>
   );
 }

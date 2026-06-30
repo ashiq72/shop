@@ -2,21 +2,37 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, RefreshCcw, ShieldCheck, Truck } from "lucide-react";
 import { apiGetSafe } from "@/lib/api";
-import type { Category, Product, Slider } from "@/lib/types";
+import type {
+  Campaign,
+  Category,
+  Collection,
+  Product,
+  Slider,
+} from "@/lib/types";
 import HeroSlider from "@/app/components/HeroSlider";
 import ProductCard from "@/app/components/ProductCard";
 
 export default async function Home() {
-  const [productsResponse, sliderResponse, categoriesResponse] =
+  const [
+    productsResponse,
+    sliderResponse,
+    categoriesResponse,
+    collectionsResponse,
+    campaignsResponse,
+  ] =
     await Promise.all([
       apiGetSafe<Product[]>("/ecommerce/products?limit=12&inStock=true"),
       apiGetSafe<Slider[]>("/ecommerce/sliders/active?limit=5"),
       apiGetSafe<Category[]>("/ecommerce/categories/tree"),
+      apiGetSafe<Collection[]>("/ecommerce/collections/public?featured=true"),
+      apiGetSafe<Campaign[]>("/ecommerce/campaigns/active?featured=true"),
     ]);
 
   const products = productsResponse.data || [];
   const sliders = sliderResponse.data || [];
   const categories = (categoriesResponse.data || []).slice(0, 8);
+  const collections = (collectionsResponse.data || []).slice(0, 3);
+  const campaigns = (campaignsResponse.data || []).slice(0, 1);
   const saleProducts = products
     .filter(
       (product) =>
@@ -53,6 +69,27 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {campaigns.map((campaign) => (
+        <section className="home-campaign" key={campaign._id}>
+          <Image
+            src={campaign.image || "/store-hero.jpg"}
+            alt={campaign.name}
+            fill
+            sizes="100vw"
+            className="object-cover"
+          />
+          <div className="store-shell">
+            <p>{campaign.badge || "Limited-time offer"}</p>
+            <h2>{campaign.name}</h2>
+            <span>{campaign.description}</span>
+            <Link href={`/campaigns/${campaign.slug}`}>
+              Shop campaign
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+        </section>
+      ))}
 
       <section className="store-section store-shell">
         <div className="store-section-heading">
@@ -102,6 +139,42 @@ export default async function Home() {
           <div className="store-empty">Categories will appear here when published.</div>
         )}
       </section>
+
+      {collections.length ? (
+        <section className="store-section store-shell">
+          <div className="store-section-heading">
+            <div>
+              <p>Curated by the store</p>
+              <h2>Shop collections</h2>
+            </div>
+            <Link href="/collections">
+              View all
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+          <div className="home-collection-grid">
+            {collections.map((collection) => (
+              <Link
+                key={collection._id}
+                href={`/collections/${collection.slug}`}
+                className="home-collection"
+              >
+                <Image
+                  src={collection.image || "/store-hero.jpg"}
+                  alt={collection.name}
+                  fill
+                  sizes="(max-width: 720px) 100vw, 33vw"
+                  className="object-cover"
+                />
+                <span>
+                  <strong>{collection.name}</strong>
+                  <small>{collection.description || "Explore collection"}</small>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="store-section store-shell">
         <div className="store-section-heading">

@@ -19,6 +19,23 @@ const headers = () => {
   return base;
 };
 
+const readError = async (res: Response) => {
+  const text = await res.text();
+  try {
+    const parsed = JSON.parse(text) as {
+      message?: string;
+      errorSources?: Array<{ message?: string }>;
+    };
+    return (
+      parsed.message ||
+      parsed.errorSources?.map((item) => item.message).filter(Boolean).join(", ") ||
+      `Request failed (${res.status})`
+    );
+  } catch {
+    return text || `Request failed (${res.status})`;
+  }
+};
+
 export const apiPost = async <T>(path: string, body: unknown) => {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -26,10 +43,23 @@ export const apiPost = async <T>(path: string, body: unknown) => {
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`API request failed: ${res.status} ${text}`);
-  }
+  if (!res.ok) throw new Error(await readError(res));
 
+  return (await res.json()) as ApiResponse<T>;
+};
+
+export const apiGetClient = async <T>(
+  path: string,
+  query?: Record<string, string | number | undefined>,
+) => {
+  const params = new URLSearchParams();
+  Object.entries(query || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") params.set(key, String(value));
+  });
+  const suffix = params.size ? `?${params.toString()}` : "";
+  const res = await fetch(`${API_BASE}${path}${suffix}`, {
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error(await readError(res));
   return (await res.json()) as ApiResponse<T>;
 };

@@ -107,3 +107,67 @@ export type ProductFacets = {
     values: Array<{ value: string; count: number }>;
   }>;
 };
+
+export type ShippingMethod = {
+  _id: string;
+  name: string;
+  code: string;
+  description?: string;
+  carrier?: string;
+  service?: string;
+  calculatedPrice: number;
+  isFree?: boolean;
+  freeAbove?: number;
+  minDeliveryDays: number;
+  maxDeliveryDays: number;
+};
+
+export type Campaign = {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  badge?: string;
+  image?: string;
+  code?: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  minimumSpend?: number;
+  maximumDiscount?: number;
+  startsAt: string;
+  endsAt: string;
+  products?: Product[];
+};
+
+export type Collection = {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  isFeatured?: boolean;
+  products?: Product[];
+};
+
+export type CheckoutQuote = {
+  currency: string;
+  subtotal: number;
+  discount: number;
+  tax: number;
+  shipping: number;
+  total: number;
+  shippingMethod: {
+    id: string;
+    name: string;
+    price: number;
+    carrier?: string;
+    service?: string;
+    minDeliveryDays: number;
+    maxDeliveryDays: number;
+  };
+  campaign?: {
+    id?: string;
+    name?: string;
+    code?: string;
+  } | null;
+};

@@ -6,6 +6,7 @@ import { ShoppingBag } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/app/components/CartProvider";
 import { useCartDrawer } from "@/app/components/CartDrawerProvider";
+import WishlistButton from "@/app/components/WishlistButton";
 
 const formatMoney = (amount: number, currency = "USD") =>
   new Intl.NumberFormat("en-US", {
@@ -66,6 +67,7 @@ export default function ProductCard({ product, badge }: Props) {
           </div>
         </div>
       </Link>
+      <WishlistButton product={product} compact />
       {product.variants?.length && !unavailable ? (
         <Link
           href={`/products/${product._id}`}

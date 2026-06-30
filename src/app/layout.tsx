@@ -9,6 +9,7 @@ import type { Branding, Category } from "@/lib/types";
 import { CartProvider } from "@/app/components/CartProvider";
 import HeaderActions from "@/app/components/HeaderActions";
 import { CartDrawerProvider } from "@/app/components/CartDrawerProvider";
+import { WishlistProvider } from "@/app/components/WishlistProvider";
 
 const bodyFont = Manrope({
   variable: "--font-manrope",
@@ -51,7 +52,8 @@ export default async function RootLayout({
     <html lang="en">
       <body className={bodyFont.variable}>
         <CartProvider tenantId={getStoreTenantId()}>
-          <CartDrawerProvider>
+          <WishlistProvider tenantId={getStoreTenantId()}>
+            <CartDrawerProvider>
             <div className="store-page">
               <header className="store-header">
                 {branding.announcement ? (
@@ -108,6 +110,8 @@ export default async function RootLayout({
                 <nav className="store-category-nav" aria-label="Product categories">
                   <div className="store-shell">
                     <Link href="/products">Shop all</Link>
+                    <Link href="/collections">Collections</Link>
+                    <Link href="/campaigns">Offers</Link>
                     {navigationCategories.map((category) => (
                       <Link
                         key={category._id}
@@ -119,6 +123,12 @@ export default async function RootLayout({
                     <Link href="/categories">All categories</Link>
                     <Link href="/cart" className="mobile-nav-cart">
                       Bag
+                    </Link>
+                    <Link href="/wishlist" className="mobile-nav-cart">
+                      Wishlist
+                    </Link>
+                    <Link href="/account/login" className="mobile-nav-cart">
+                      Account
                     </Link>
                   </div>
                 </nav>
@@ -142,6 +152,10 @@ export default async function RootLayout({
                     <strong>Shop</strong>
                     <Link href="/products">All products</Link>
                     <Link href="/categories">Categories</Link>
+                    <Link href="/collections">Collections</Link>
+                    <Link href="/campaigns">Offers</Link>
+                    <Link href="/wishlist">Wishlist</Link>
+                    <Link href="/account/login">Account</Link>
                     <Link href="/cart">Shopping bag</Link>
                   </div>
                   <div>
@@ -157,7 +171,8 @@ export default async function RootLayout({
                 </div>
               </footer>
             </div>
-          </CartDrawerProvider>
+            </CartDrawerProvider>
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>
