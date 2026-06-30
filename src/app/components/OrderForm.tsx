@@ -89,9 +89,9 @@ const OrderForm = ({ product }: Props) => {
       );
       setQuantity(1);
       setVariantSku("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "Failed to place order");
+      setError(err instanceof Error ? err.message : "Failed to place order");
     } finally {
       setLoading(false);
     }

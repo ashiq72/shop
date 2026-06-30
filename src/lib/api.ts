@@ -4,7 +4,7 @@ const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.API_BASE_URL ||
   process.env.VITE_API_URL ||
-  "http://localhost:5000/api/v1";
+  "http://localhost:4000/api/v1";
 const TENANT_ID =
   process.env.NEXT_PUBLIC_TENANT_ID ||
   process.env.TENANT_ID ||
@@ -58,3 +58,5 @@ export const apiGetSafe = cache(async <T>(path: string) => {
     } as ApiResponse<T>;
   }
 });
+
+export const getStoreTenantId = () => TENANT_ID;

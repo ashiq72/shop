@@ -4,15 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/app/components/CartProvider";
 
-const formatMoney = (amount: number) => {
+const formatMoney = (amount: number, currency = "USD") => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
   }).format(amount);
 };
 
 export default function CartPage() {
   const { items, subtotal, updateQuantity, removeItem, clearCart, ready } = useCart();
+  const currency = items[0]?.currency || "USD";
 
   if (!ready) {
     return (
@@ -84,7 +85,7 @@ export default function CartPage() {
                   <p className="text-xs text-slate-500">SKU: {item.variantSku}</p>
                 ) : null}
                 <p className="mt-1 text-sm font-semibold text-slate-900">
-                  {formatMoney(item.price)}
+                  {formatMoney(item.price, item.currency || currency)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -109,7 +110,7 @@ export default function CartPage() {
                 </button>
               </div>
               <div className="text-sm font-semibold text-slate-900">
-                {formatMoney(item.price * item.quantity)}
+                {formatMoney(item.price * item.quantity, item.currency || currency)}
               </div>
               <button
                 onClick={() => removeItem(item.key)}
@@ -125,7 +126,7 @@ export default function CartPage() {
           <h2 className="text-lg font-semibold">Order summary</h2>
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-500">Subtotal</span>
-            <span className="font-semibold">{formatMoney(subtotal)}</span>
+            <span className="font-semibold">{formatMoney(subtotal, currency)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-500">Shipping</span>
@@ -133,7 +134,7 @@ export default function CartPage() {
           </div>
           <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
             <span className="text-sm font-semibold">Total</span>
-            <span className="text-lg font-semibold">{formatMoney(subtotal)}</span>
+            <span className="text-lg font-semibold">{formatMoney(subtotal, currency)}</span>
           </div>
           <Link
             href="/checkout"

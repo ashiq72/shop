@@ -5,10 +5,10 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/app/components/CartProvider";
 import { apiPost } from "@/lib/clientApi";
 
-const formatMoney = (amount: number) => {
+const formatMoney = (amount: number, currency = "USD") => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
   }).format(amount);
 };
 
@@ -16,6 +16,7 @@ const countries = ["Bangladesh", "United States", "Canada", "United Kingdom"];
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart, ready } = useCart();
+  const currency = items[0]?.currency || "USD";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,9 +72,9 @@ export default function CheckoutPage() {
           ? `Order placed: ${response.data.orderNumber}`
           : "Order placed successfully",
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "Failed to place order");
+      setError(err instanceof Error ? err.message : "Failed to place order");
     } finally {
       setLoading(false);
     }
@@ -196,11 +197,11 @@ export default function CheckoutPage() {
                   <p className="font-semibold text-slate-800">{item.name}</p>
                   <p className="text-xs text-slate-500">
                     Qty {item.quantity}
-                    {item.variantSku ? ` � ${item.variantSku}` : ""}
+                    {item.variantSku ? ` / ${item.variantSku}` : ""}
                   </p>
                 </div>
                 <span className="font-semibold">
-                  {formatMoney(item.price * item.quantity)}
+                  {formatMoney(item.price * item.quantity, item.currency || currency)}
                 </span>
               </div>
             ))}
@@ -208,7 +209,7 @@ export default function CheckoutPage() {
           <div className="border-t border-slate-200 pt-3 space-y-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold">{formatMoney(subtotal)}</span>
+              <span className="font-semibold">{formatMoney(subtotal, currency)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500">Shipping</span>
@@ -217,7 +218,7 @@ export default function CheckoutPage() {
           </div>
           <div className="border-t border-slate-200 pt-3 flex items-center justify-between">
             <span className="text-sm font-semibold">Total</span>
-            <span className="text-lg font-semibold">{formatMoney(subtotal)}</span>
+            <span className="text-lg font-semibold">{formatMoney(subtotal, currency)}</span>
           </div>
         </div>
       </div>

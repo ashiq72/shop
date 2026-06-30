@@ -16,6 +16,7 @@ export type CartItem = {
   name: string;
   image?: string;
   price: number;
+  currency: string;
   quantity: number;
   variantSku?: string;
 };
@@ -33,15 +34,20 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
-const STORAGE_KEY = "grocerygo_cart";
-
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export const CartProvider = ({
+  children,
+  tenantId,
+}: {
+  children: ReactNode;
+  tenantId: string;
+}) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
+  const storageKey = `commerce360_cart_${tenantId || "store"}`;
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -53,16 +59,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setReady(true);
     }
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      localStorage.setItem(storageKey, JSON.stringify(items));
     } catch {
       // ignore storage errors
     }
-  }, [items, ready]);
+  }, [items, ready, storageKey]);
 
   const addItem = useCallback((item: Omit<CartItem, "key">) => {
     const key = `${item.productId}:${item.variantSku || ""}`;

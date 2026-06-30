@@ -5,10 +5,10 @@ import type { Product, ProductVariant } from "@/lib/types";
 import { useCart } from "@/app/components/CartProvider";
 import { useCartDrawer } from "@/app/components/CartDrawerProvider";
 
-const formatMoney = (amount: number) => {
+const formatMoney = (amount: number, currency = "USD") => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
   }).format(amount);
 };
 
@@ -38,7 +38,13 @@ const AddToCart = ({ product }: Props) => {
     product.salePrice ??
     product.price;
 
-  const image = product.thumbnail || product.images?.[0];
+  const image = selectedVariant?.image || product.thumbnail || product.images?.[0];
+  const availableStock =
+    selectedVariant?.stock ??
+    (product.trackStock === false
+      ? Number.POSITIVE_INFINITY
+      : Math.max(0, (product.stock || 0) - (product.reserved || 0)));
+  const unavailable = availableStock <= 0;
 
   const handleAdd = () => {
     setMessage("");
@@ -51,10 +57,15 @@ const AddToCart = ({ product }: Props) => {
       setMessage("Quantity must be at least 1.");
       return;
     }
+    if (qty > availableStock) {
+      setMessage(`Only ${availableStock} available.`);
+      return;
+    }
     addItem({
       productId: product._id,
       name: product.name,
       price,
+      currency: product.currency || "USD",
       quantity: qty,
       variantSku: variantSku || undefined,
       image,
@@ -68,7 +79,7 @@ const AddToCart = ({ product }: Props) => {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-700">Add to cart</h3>
         <span className="text-sm font-semibold text-slate-900">
-          {formatMoney(price)}
+          {formatMoney(price, product.currency || "USD")}
         </span>
       </div>
 
@@ -81,7 +92,9 @@ const AddToCart = ({ product }: Props) => {
           <option value="">Select variant</option>
           {variants.map((variant) => (
             <option key={variant.sku} value={variant.sku || ""}>
-              {variant.sku || "Variant"}
+              {Object.values(variant.attributes || {}).join(" / ") ||
+                variant.sku ||
+                "Variant"}
             </option>
           ))}
         </select>
@@ -91,6 +104,7 @@ const AddToCart = ({ product }: Props) => {
         <input
           type="number"
           min={1}
+          max={Number.isFinite(availableStock) ? availableStock : undefined}
           value={quantity}
           onChange={(e) => setQuantity(Number(e.target.value))}
           className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-sm"
@@ -98,9 +112,10 @@ const AddToCart = ({ product }: Props) => {
         <button
           type="button"
           onClick={handleAdd}
+          disabled={unavailable}
           className="flex-1 rounded-full bg-deep px-5 py-3 text-sm font-semibold text-white"
         >
-          Add to cart
+          {unavailable ? "Unavailable" : "Add to cart"}
         </button>
       </div>
 

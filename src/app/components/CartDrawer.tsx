@@ -5,10 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/app/components/CartProvider";
 
-const formatMoney = (amount: number) => {
+const formatMoney = (amount: number, currency = "USD") => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
   }).format(amount);
 };
 
@@ -19,6 +19,7 @@ type Props = {
 
 const CartDrawer = ({ open, onClose }: Props) => {
   const { items, subtotal, updateQuantity, removeItem, clearCart } = useCart();
+  const currency = items[0]?.currency || "USD";
 
   useEffect(() => {
     if (!open) return;
@@ -103,7 +104,7 @@ const CartDrawer = ({ open, onClose }: Props) => {
                       <p className="text-xs text-slate-500">{item.variantSku}</p>
                     ) : null}
                     <p className="text-xs font-semibold text-slate-900">
-                      {formatMoney(item.price)}
+                      {formatMoney(item.price, item.currency || currency)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
@@ -144,7 +145,7 @@ const CartDrawer = ({ open, onClose }: Props) => {
           <div className="border-t border-slate-200 px-5 py-4">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold">{formatMoney(subtotal)}</span>
+              <span className="font-semibold">{formatMoney(subtotal, currency)}</span>
             </div>
             <div className="mt-3 flex flex-col gap-2">
               <Link

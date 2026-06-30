@@ -1,234 +1,158 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, RefreshCcw, ShieldCheck, Truck } from "lucide-react";
 import { apiGetSafe } from "@/lib/api";
 import type { Category, Product, Slider } from "@/lib/types";
-import HeroSlider from "./components/HeroSlider";
+import HeroSlider from "@/app/components/HeroSlider";
 import ProductCard from "@/app/components/ProductCard";
 
-const categoryColors = [
-  "bg-emerald-100",
-  "bg-amber-100",
-  "bg-sky-100",
-  "bg-rose-100",
-  "bg-orange-100",
-  "bg-teal-100",
-];
-
-const blogs = [
-  {
-    title: "How to pick the freshest produce every time",
-    tag: "Fresh Tips",
-  },
-  {
-    title: "Meal prep shortcuts for a busy week",
-    tag: "Grocery Hacks",
-  },
-  {
-    title: "Build a balanced pantry for every season",
-    tag: "Healthy Living",
-  },
-];
-
 export default async function Home() {
-  const productsRes = await apiGetSafe<Product[]>("/ecommerce/products?limit=8");
-  const products = productsRes.data || [];
-  const sliderRes = await apiGetSafe<Slider[]>(
-    "/ecommerce/sliders/active?limit=5",
-  );
-  const sliders = sliderRes.data || [];
-  const categoriesRes = await apiGetSafe<Category[]>(
-    "/ecommerce/categories?limit=6&status=active&parent=root",
-  );
-  const categories = categoriesRes.data || [];
+  const [productsResponse, sliderResponse, categoriesResponse] =
+    await Promise.all([
+      apiGetSafe<Product[]>("/ecommerce/products?limit=12&inStock=true"),
+      apiGetSafe<Slider[]>("/ecommerce/sliders/active?limit=5"),
+      apiGetSafe<Category[]>("/ecommerce/categories/tree"),
+    ]);
+
+  const products = productsResponse.data || [];
+  const sliders = sliderResponse.data || [];
+  const categories = (categoriesResponse.data || []).slice(0, 8);
+  const saleProducts = products
+    .filter(
+      (product) =>
+        product.salePrice !== undefined && product.salePrice < product.price,
+    )
+    .slice(0, 4);
 
   return (
     <main>
-      <section className="hero-sheen">
-        <div className="mx-auto w-full max-w-6xl px-6 py-10 md:py-14">
-          <HeroSlider slides={sliders} />
+      <HeroSlider slides={sliders} />
+
+      <section className="store-benefits">
+        <div className="store-shell">
+          <div>
+            <Truck size={21} />
+            <span>
+              <strong>Reliable delivery</strong>
+              Clear fulfillment from checkout to arrival
+            </span>
+          </div>
+          <div>
+            <ShieldCheck size={21} />
+            <span>
+              <strong>Secure ordering</strong>
+              Tenant-isolated catalog and order processing
+            </span>
+          </div>
+          <div>
+            <RefreshCcw size={21} />
+            <span>
+              <strong>Simple returns</strong>
+              Helpful support when an order is not right
+            </span>
+          </div>
         </div>
       </section>
 
-      <section id="categories" className="mx-auto w-full max-w-6xl px-6 py-14">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <section className="store-section store-shell">
+        <div className="store-section-heading">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Shop by
-            </p>
-            <h2 className="font-display text-3xl font-semibold text-deep">
-              Popular categories
-            </h2>
+            <p>Browse the store</p>
+            <h2>Shop by category</h2>
           </div>
-          <a href="/categories" className="text-sm font-semibold text-sage">
-            Browse all categories
-          </a>
+          <Link href="/categories">
+            View categories
+            <ArrowRight size={17} />
+          </Link>
         </div>
-        {categories.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-amber-100/70 bg-white px-6 py-8 text-sm text-slate-500">
-            No categories found yet.
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {categories.map((category, index) => {
-              const color = categoryColors[index % categoryColors.length];
-              return (
-                <div
-                  key={category._id}
-                  className="flex items-center justify-between rounded-2xl border border-amber-100/70 bg-white px-5 py-5 shadow-sm transition hover:-translate-y-1"
-                >
-                  <div>
-                    <h3 className="text-base font-semibold text-deep">
-                      {category.name}
-                    </h3>
-                    <p className="text-sm text-slate-500">Browse items</p>
-                  </div>
+
+        {categories.length ? (
+          <div className="category-showcase">
+            {categories.map((category) => (
+              <Link
+                href={`/products?category=${category._id}`}
+                key={category._id}
+                className="category-showcase-item"
+              >
+                <div>
                   {category.image ? (
                     <Image
                       src={category.image}
                       alt={category.name}
-                      width={56}
-                      height={56}
-                      className="h-14 w-14 rounded-2xl object-cover shadow-inner"
+                      fill
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                      className="object-cover"
                     />
                   ) : (
-                    <span
-                      className={`h-12 w-12 rounded-2xl ${color} shadow-inner`}
+                    <Image
+                      src="/store-hero.jpg"
+                      alt=""
+                      fill
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                      className="object-cover"
                     />
                   )}
                 </div>
-              );
-            })}
+                <strong>{category.name}</strong>
+                <span>{category.children?.length || 0} collections</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="store-empty">Categories will appear here when published.</div>
+        )}
+      </section>
+
+      <section className="store-section store-shell">
+        <div className="store-section-heading">
+          <div>
+            <p>Available now</p>
+            <h2>Featured products</h2>
+          </div>
+          <Link href="/products">
+            Shop all
+            <ArrowRight size={17} />
+          </Link>
+        </div>
+
+        {products.length ? (
+          <div className="product-grid">
+            {products.slice(0, 8).map((product) => (
+              <ProductCard
+                key={product._id}
+                product={product}
+                badge={product.isFeatured ? "Featured" : undefined}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="store-empty">
+            Products published from the dashboard will appear here.
           </div>
         )}
       </section>
 
-      <section id="search" className="mx-auto w-full max-w-6xl px-6 pb-14">
-        <div className="rounded-3xl border border-amber-100/70 bg-white px-6 py-10 shadow-sm md:px-10">
-          <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] md:items-center">
-            <div className="space-y-3">
-              <h3 className="font-display text-2xl font-semibold text-deep">
-                Find groceries in a flash
-              </h3>
-              <p className="text-sm text-slate-500">
-                Search by brand, category, or fresh deals curated daily.
-              </p>
+      {saleProducts.length ? (
+        <section className="store-sale-band">
+          <div className="store-shell">
+            <div className="store-section-heading inverse">
+              <div>
+                <p>Limited offers</p>
+                <h2>Current price drops</h2>
+              </div>
+              <Link href="/products">
+                Browse deals
+                <ArrowRight size={17} />
+              </Link>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <input
-                placeholder="Search for apples, milk, bread..."
-                className="min-w-[220px] flex-1 rounded-full border border-amber-100/70 px-4 py-3 text-sm text-slate-600 outline-none focus:border-sage"
-              />
-              <a
-                href="/products"
-                className="rounded-full bg-deep px-5 py-3 text-sm font-semibold text-white"
-              >
-                Search
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="featured" className="mx-auto w-full max-w-6xl px-6 py-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Best picks
-            </p>
-            <h2 className="font-display text-3xl font-semibold text-deep">
-              Featured products
-            </h2>
-          </div>
-          <a href="/products" className="text-sm font-semibold text-sage">
-            View all products
-          </a>
-        </div>
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard
-              key={product._id}
-              product={product}
-              badge="Fresh"
-              className="rounded-3xl border-amber-100/70 bg-white shadow-sm"
-            />
-          ))}
-        </div>
-      </section>
-
-      <section id="gallery" className="mx-auto w-full max-w-6xl px-6 py-14">
-        <div className="grid gap-8 md:grid-cols-[1.2fr_1fr] md:items-center">
-          <div className="space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              Our promise
-            </p>
-            <h3 className="font-display text-3xl font-semibold text-deep">
-              Farm-fresh produce, everyday essentials, delivered with care.
-            </h3>
-            <p className="text-sm text-slate-500">
-              We partner with nearby farms and local suppliers to keep your
-              pantry stocked with the freshest selection.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                "Live order tracking",
-                "Cold chain storage",
-                "Hand-picked quality",
-                "Eco-friendly packaging",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-amber-100/70 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm"
-                >
-                  {item}
-                </div>
+            <div className="product-grid">
+              {saleProducts.map((product) => (
+                <ProductCard key={product._id} product={product} badge="Sale" />
               ))}
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {["bg-emerald-100", "bg-amber-100", "bg-rose-100", "bg-sky-100"].map(
-              (color, index) => (
-                <div
-                  key={`${color}-${index}`}
-                  className={`h-40 rounded-3xl ${color} shadow-inner`}
-                />
-              )
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section id="blogs" className="mx-auto w-full max-w-6xl px-6 pb-16">
-        <div className="rounded-3xl border border-amber-100/70 bg-white px-6 py-10 shadow-sm md:px-10">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Grocery stories
-              </p>
-              <h3 className="font-display text-2xl font-semibold text-deep">
-                Fresh ideas for your kitchen
-              </h3>
-            </div>
-            <a href="#" className="text-sm font-semibold text-sage">
-              Read more
-            </a>
-          </div>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {blogs.map((blog) => (
-              <div
-                key={blog.title}
-                className="rounded-2xl border border-amber-100/70 bg-cream px-5 py-6 text-sm shadow-sm"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  {blog.tag}
-                </p>
-                <p className="mt-3 text-base font-semibold text-deep">
-                  {blog.title}
-                </p>
-                <p className="mt-4 text-xs text-slate-500">5 min read</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
     </main>
   );
 }

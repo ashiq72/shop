@@ -2,118 +2,92 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Slider } from "@/lib/types";
 
-type HeroSlide = Slider & { badge?: string };
-
-const fallbackSlides: HeroSlide[] = [
+const fallbackSlides: Slider[] = [
   {
-    title: "Shopping with us for better quality and the best price.",
+    title: "Fresh market essentials, delivered to your door.",
     subtitle:
-      "Fresh picks, local farms, and same-day delivery across the city.",
-    image: "/hero-1.svg",
-    badge: "Only this week",
-  },
-  {
-    title: "Up to 30% off on fruits, juices, and daily essentials.",
-    subtitle: "Build your healthy cart with our weekly combo offers.",
-    image: "/hero-2.svg",
-    badge: "Weekly savings",
-  },
-  {
-    title: "Fast delivery, cool storage, and hand-picked quality.",
-    subtitle: "From farm to door with live tracking and safe packaging.",
-    image: "/hero-3.svg",
-    badge: "Fresh promise",
+      "Shop produce, pantry staples, and everyday favorites from one trusted local storefront.",
+    image: "/store-hero.jpg",
+    buttonText: "Shop the catalog",
+    link: "/products",
   },
 ];
 
-type HeroSliderProps = {
-  slides?: Slider[];
-};
-
-export default function HeroSlider({ slides }: HeroSliderProps) {
-  const items = useMemo<HeroSlide[]>(
-    () => (slides && slides.length ? slides : fallbackSlides),
+export default function HeroSlider({ slides }: { slides?: Slider[] }) {
+  const items = useMemo(
+    () => (slides?.length ? slides : fallbackSlides),
     [slides],
   );
   const [active, setActive] = useState(0);
 
   useEffect(() => {
-    if (items.length < 2) {
-      return;
-    }
-    const interval = setInterval(() => {
-      setActive((prev) => (prev + 1) % items.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    if (items.length < 2) return;
+    const interval = window.setInterval(
+      () => setActive((value) => (value + 1) % items.length),
+      6000,
+    );
+    return () => window.clearInterval(interval);
   }, [items.length]);
 
+  const move = (direction: number) =>
+    setActive((value) => (value + direction + items.length) % items.length);
+
   return (
-    <div className="relative h-105 overflow-hidden rounded-3xl border border-amber-100/70 bg-white shadow-sm md:h-115">
+    <section className="store-hero" aria-label="Store promotions">
       {items.map((slide, index) => (
         <div
+          className={`store-hero-slide ${index === active ? "active" : ""}`}
           key={slide._id || slide.title}
-          className={`absolute inset-0 transition-opacity duration-700 ${
-            index === active ? "opacity-100" : "opacity-0"
-          }`}
           aria-hidden={index !== active}
         >
           <Image
             src={slide.image}
-            alt={slide.title}
+            alt=""
             fill
-            className="object-cover"
             priority={index === 0}
+            sizes="100vw"
+            className="object-cover"
           />
+          <div className="store-hero-shade" />
+          <div className="store-shell store-hero-content">
+            <p>Freshly selected</p>
+            <h1>{slide.title}</h1>
+            {slide.subtitle ? <span>{slide.subtitle}</span> : null}
+            <Link href={slide.link || "/products"}>
+              {slide.buttonText || "Shop now"}
+              <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
       ))}
-      <div className="absolute bottom-5 left-8 z-10 flex items-center gap-2">
-        {items.map((_, index) => (
-          <button
-            key={`dot-${index}`}
-            onClick={() => setActive(index)}
-            className={`h-2.5 w-2.5 rounded-full transition ${
-              index === active ? "bg-sage" : "bg-amber-200"
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
-      <div className="absolute bottom-5 right-6 z-10 flex items-center gap-2">
-        <button
-          onClick={() =>
-            setActive((prev) => (prev - 1 + items.length) % items.length)
-          }
-          className="grid h-10 w-10 place-items-center rounded-full border border-amber-100/70 bg-white text-slate-600 shadow-sm hover:bg-amber-50"
-          aria-label="Previous slide"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <button
-          onClick={() => setActive((prev) => (prev + 1) % items.length)}
-          className="grid h-10 w-10 place-items-center rounded-full border border-amber-100/70 bg-white text-slate-600 shadow-sm hover:bg-amber-50"
-          aria-label="Next slide"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </button>
-      </div>
-    </div>
+
+      {items.length > 1 ? (
+        <>
+          <div className="store-hero-controls">
+            <button type="button" onClick={() => move(-1)} aria-label="Previous slide">
+              <ArrowLeft size={19} />
+            </button>
+            <button type="button" onClick={() => move(1)} aria-label="Next slide">
+              <ArrowRight size={19} />
+            </button>
+          </div>
+          <div className="store-hero-dots">
+            {items.map((slide, index) => (
+              <button
+                type="button"
+                key={slide._id || `${slide.title}-${index}`}
+                className={index === active ? "active" : ""}
+                onClick={() => setActive(index)}
+                aria-label={`Show promotion ${index + 1}`}
+              />
+            ))}
+          </div>
+        </>
+      ) : null}
+    </section>
   );
 }

@@ -1,74 +1,71 @@
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { apiGetSafe } from "@/lib/api";
 import type { Category } from "@/lib/types";
 
-const fallbackColors = [
-  "bg-emerald-100",
-  "bg-amber-100",
-  "bg-sky-100",
-  "bg-rose-100",
-  "bg-orange-100",
-  "bg-teal-100",
-];
-
 export default async function CategoriesPage() {
-  const categoriesRes = await apiGetSafe<Category[]>(
-    "/ecommerce/categories?limit=24&status=active&parent=root",
-  );
-  const categories = categoriesRes.data || [];
+  const response = await apiGetSafe<Category[]>("/ecommerce/categories/tree");
+  const categories = response.data || [];
 
   return (
-    <main className="bg-gradient-to-b from-cream via-cream to-white">
-      <section className="mx-auto w-full max-w-6xl px-6 py-14">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="font-display text-3xl font-semibold text-deep">
-              Popular categories
-            </h1>
-          </div>
-          <a href="/products" className="text-sm font-semibold text-sage">
-            Browse all categories
-          </a>
+    <main className="store-shell category-page">
+      <header className="catalog-heading">
+        <div>
+          <p>Catalog directory</p>
+          <h1>Shop by category</h1>
+          <span>Browse every active product collection.</span>
         </div>
+        <Link href="/products" className="catalog-clear">
+          Shop all
+          <ArrowRight size={16} />
+        </Link>
+      </header>
 
-        {categories.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-amber-100/70 bg-white px-6 py-10 text-sm text-slate-500 shadow-sm">
-            No categories found yet.
-          </div>
-        ) : (
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {categories.map((category, index) => {
-              const fallback = fallbackColors[index % fallbackColors.length];
-              return (
-                <div
-                  key={category._id}
-                  className="flex items-center justify-between gap-4 rounded-2xl border border-amber-100/70 bg-white px-6 py-5 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                >
+      {categories.length ? (
+        <div className="category-directory">
+          {categories.map((category) => (
+            <article key={category._id} className="category-directory-item">
+              <Link
+                href={`/products?category=${category._id}`}
+                className="category-directory-media"
+              >
+                <Image
+                  src={category.image || "/store-hero.jpg"}
+                  alt={category.name}
+                  fill
+                  sizes="(max-width: 760px) 100vw, 33vw"
+                  className="object-cover"
+                />
+              </Link>
+              <div className="category-directory-copy">
+                <Link href={`/products?category=${category._id}`}>
+                  <h2>{category.name}</h2>
+                  <ArrowRight size={17} />
+                </Link>
+                {category.children?.length ? (
                   <div>
-                    <h3 className="text-base font-semibold text-deep">
-                      {category.name}
-                    </h3>
-                    <p className="text-sm text-slate-500">Browse items</p>
+                    {category.children.map((child) => (
+                      <Link
+                        href={`/products?category=${child._id}`}
+                        key={child._id}
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
                   </div>
-                  {category.image ? (
-                    <Image
-                      src={category.image}
-                      alt={category.name}
-                      width={56}
-                      height={56}
-                      className="h-14 w-14 rounded-2xl object-cover"
-                    />
-                  ) : (
-                    <span
-                      className={`h-14 w-14 rounded-2xl ${fallback} shadow-inner`}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                ) : (
+                  <span>Explore this collection</span>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="store-empty">
+          Categories published from the dashboard will appear here.
+        </div>
+      )}
     </main>
   );
 }

@@ -1,7 +1,15 @@
 import Image from "next/image";
+import { Download } from "lucide-react";
+import Link from "next/link";
 import { apiGet } from "@/lib/api";
 import type { Product, ReviewSummary } from "@/lib/types";
 import AddToCart from "@/app/components/AddToCart";
+
+const formatMoney = (amount: number, currency = "USD") =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+  }).format(amount);
 
 type PageProps = {
   params: { id: string } | Promise<{ id: string }>;
@@ -81,23 +89,28 @@ export default async function ProductDetail({ params }: PageProps) {
   const stockLabel =
     product.trackStock === false
       ? "Unlimited stock"
-      : `${product.stock ?? 0} in stock`;
+      : `${Math.max(0, (product.stock || 0) - (product.reserved || 0))} in stock`;
   const description =
     product.shortDescription || product.description || "No description provided.";
   const categoryNames =
     product.categories?.map((category) => category.name).filter(Boolean) || [];
   const tags = product.tags || [];
+  const features = product.features || [];
+  const attributes = Object.entries(product.attributes || {});
+  const faqs = product.faqs || [];
+  const publicFiles = (product.files || []).filter((file) => file.isPublic);
+  const currency = product.currency || "USD";
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-12">
       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-        <a href="/" className="hover:text-slate-700">
+        <Link href="/" className="hover:text-slate-700">
           Home
-        </a>
+        </Link>
         <span>/</span>
-        <a href="/products" className="hover:text-slate-700">
+        <Link href="/products" className="hover:text-slate-700">
           Products
-        </a>
+        </Link>
         <span>/</span>
         <span className="text-slate-700">{product.name}</span>
       </div>
@@ -145,12 +158,12 @@ export default async function ProductDetail({ params }: PageProps) {
 
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-3xl font-semibold text-slate-900">
-              ${price}
+              {formatMoney(price, currency)}
             </span>
             {hasSale ? (
               <>
                 <span className="text-slate-400 line-through">
-                  ${product.price}
+                  {formatMoney(product.price, currency)}
                 </span>
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
                   Save {discountPercent}%
@@ -246,6 +259,52 @@ export default async function ProductDetail({ params }: PageProps) {
               </div>
             </div>
           ) : null}
+          {features.length > 0 ? (
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Highlights
+              </p>
+              <ul className="mt-2 grid gap-2 text-sm text-slate-600">
+                {features.map((feature) => (
+                  <li key={feature}>• {feature}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {attributes.length > 0 ? (
+            <dl className="mt-5 grid gap-2">
+              {attributes.map(([key, value]) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between border-b border-slate-100 py-2 text-sm"
+                >
+                  <dt className="capitalize text-slate-500">{key}</dt>
+                  <dd className="font-semibold text-slate-800">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {publicFiles.length > 0 ? (
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                Downloads
+              </p>
+              <div className="mt-2 grid gap-2">
+                {publicFiles.map((file) => (
+                  <a
+                    key={`${file.name}-${file.url}`}
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    <span>{file.name}</span>
+                    <Download size={16} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-6">
           <h2 className="text-lg font-semibold text-slate-900">
@@ -259,6 +318,29 @@ export default async function ProductDetail({ params }: PageProps) {
           </ul>
         </div>
       </div>
+
+      {faqs.length > 0 ? (
+        <section className="mt-10 border-t border-slate-200 pt-8">
+          <h2 className="text-xl font-semibold text-slate-900">
+            Product questions
+          </h2>
+          <div className="mt-4 grid gap-3">
+            {faqs.map((faq) => (
+              <details
+                key={faq.question}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3"
+              >
+                <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                  {faq.question}
+                </summary>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 }
