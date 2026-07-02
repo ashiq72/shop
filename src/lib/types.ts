@@ -149,6 +149,18 @@ export type Collection = {
   products?: Product[];
 };
 
+export type Brand = {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logo?: string;
+  coverImage?: string;
+  website?: string;
+  isFeatured?: boolean;
+  products?: Product[];
+};
+
 export type CheckoutQuote = {
   currency: string;
   subtotal: number;
@@ -170,4 +182,46 @@ export type CheckoutQuote = {
     name?: string;
     code?: string;
   } | null;
+};
+
+export type AccountUser = {
+  _id?: string;
+  userId?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  gender?: "male" | "female" | "other";
+  image?: string;
+  bio?: string;
+  location?: string;
+  createdAt?: string;
+};
+
+export type ShopOrder = {
+  _id: string;
+  orderNumber?: string;
+  currency?: string;
+  subtotal?: number;
+  discount?: number;
+  shipping?: number;
+  total?: number;
+  status?: string;
+  paymentStatus?: string;
+  fulfillmentStatus?: string;
+  paymentMethod?: string;
+  shippingMethod?: {
+    name?: string;
+    carrier?: string;
+    service?: string;
+  };
+  items?: Array<{
+    product?: string;
+    name: string;
+    image?: string;
+    variantSku?: string;
+    quantity: number;
+    unitPrice: number;
+    total: number;
+  }>;
+  createdAt?: string;
 };

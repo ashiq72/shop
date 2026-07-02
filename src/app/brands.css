@@ -1,0 +1,255 @@
+.brand-directory {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.brand-directory-item {
+  display: grid;
+  min-height: 150px;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 18px;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.brand-directory-item:hover {
+  transform: translateY(-2px);
+  border-color: #afbeb4;
+}
+
+.brand-directory-logo,
+.home-brand-logo,
+.brand-profile-logo {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7f9f7;
+  color: var(--forest);
+}
+
+.brand-directory-logo {
+  width: 78px;
+  height: 78px;
+}
+
+.brand-directory-logo img,
+.home-brand-logo img,
+.brand-profile-logo img {
+  padding: 9px;
+}
+
+.brand-directory-logo strong {
+  font-size: 25px;
+}
+
+.brand-directory-item > div:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.brand-directory-item span {
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.brand-directory-item h2,
+.brand-directory-item p {
+  margin: 0;
+}
+
+.brand-directory-item h2 {
+  color: var(--deep);
+  font-size: 16px;
+}
+
+.brand-directory-item p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.brand-directory-item > svg {
+  color: #8a958f;
+}
+
+.brand-profile-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--forest);
+}
+
+.brand-profile-hero::after {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 28, 20, 0.64);
+  content: "";
+}
+
+.brand-profile-hero > .store-shell {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  min-height: 390px;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  gap: 28px;
+  color: #fff;
+  padding-top: 76px;
+  padding-bottom: 58px;
+}
+
+.brand-profile-hero > .store-shell > a:first-child {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #dfece6;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.brand-profile-logo {
+  width: 130px;
+  height: 130px;
+  background: #fff;
+}
+
+.brand-profile-logo > strong {
+  color: var(--forest);
+  font-size: 42px;
+}
+
+.brand-profile-hero > .store-shell > div:last-child {
+  display: grid;
+  max-width: 680px;
+  gap: 9px;
+}
+
+.brand-profile-hero p {
+  margin: 0;
+  color: #9fe0c4;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.brand-profile-hero h1 {
+  margin: 0;
+  font-size: 40px;
+}
+
+.brand-profile-hero div > span {
+  color: #dce8e2;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.brand-profile-hero div > a:last-child {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 7px;
+  padding: 9px 12px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.home-brands-section {
+  border-top: 1px solid var(--line);
+}
+
+.home-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.home-brand-grid > a {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: 8px;
+  color: var(--deep);
+  font-size: 10px;
+  text-align: center;
+}
+
+.home-brand-logo {
+  width: 100%;
+  max-width: 118px;
+  aspect-ratio: 1;
+}
+
+.home-brand-logo > strong {
+  font-size: 24px;
+}
+
+.home-brand-grid > a > strong {
+  overflow: hidden;
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .brand-directory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-brand-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .brand-directory {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-profile-hero > .store-shell {
+    min-height: 430px;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding-top: 80px;
+  }
+
+  .brand-profile-hero > .store-shell > a:first-child {
+    left: 12px;
+  }
+
+  .brand-profile-logo {
+    width: 94px;
+    height: 94px;
+  }
+
+  .brand-profile-hero h1 {
+    font-size: 31px;
+  }
+
+  .home-brand-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+

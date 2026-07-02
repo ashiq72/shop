@@ -1,173 +1,265 @@
 "use client";
 
-import { useEffect } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+import {
+  ArrowRight,
+  Minus,
+  PackageOpen,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Trash2,
+  Truck,
+  X,
+} from "lucide-react";
 import { useCart } from "@/app/components/CartProvider";
 
-const formatMoney = (amount: number, currency = "USD") => {
-  return new Intl.NumberFormat("en-US", {
+const money = (amount: number, currency: string) =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
   }).format(amount);
-};
 
-type Props = {
+export default function CartDrawer({
+  open,
+  onClose,
+}: {
   open: boolean;
   onClose: () => void;
-};
-
-const CartDrawer = ({ open, onClose }: Props) => {
-  const { items, subtotal, updateQuantity, removeItem, clearCart } = useCart();
+}) {
+  const {
+    items,
+    totalItems,
+    subtotal,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    ready,
+  } = useCart();
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const currency = items[0]?.currency || "USD";
 
   useEffect(() => {
     if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
+    const timer = window.setTimeout(() => closeButtonRef.current?.focus(), 180);
+    return () => window.clearTimeout(timer);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-[60]">
+    <div
+      className={`cart-drawer-layer ${open ? "open" : ""}`}
+      aria-hidden={!open}
+    >
       <button
         type="button"
+        className="cart-drawer-backdrop"
         onClick={onClose}
-        className="absolute inset-0 bg-black/40"
-        aria-label="Close cart"
+        aria-label="Close shopping bag"
+        tabIndex={open ? 0 : -1}
       />
-      <div className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+
+      <aside
+        className="cart-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Shopping bag"
+      >
+        <header className="cart-drawer-header">
           <div>
-            <h2 className="text-lg font-semibold">Your cart</h2>
-            <p className="text-xs text-slate-500">{items.length} items</p>
+            <span className="cart-drawer-title-icon">
+              <ShoppingBag size={18} />
+            </span>
+            <span>
+              <strong>Your bag</strong>
+              <small>
+                {totalItems
+                  ? `${totalItems} ${totalItems === 1 ? "item" : "items"}`
+                  : "Ready when you are"}
+              </small>
+            </span>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
+            className="cart-drawer-close"
             onClick={onClose}
-            className="rounded-full border border-slate-200 px-2 py-1 text-sm"
+            aria-label="Close shopping bag"
+            title="Close"
           >
-            X
+            <X size={19} />
           </button>
-        </div>
+        </header>
 
-        <div className="px-5 py-4">
-          {items.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
-              Your cart is empty.
-              <Link
-                href="/products"
-                className="mt-4 inline-flex rounded-full bg-deep px-5 py-2 text-xs font-semibold text-white"
-                onClick={onClose}
-              >
-                Browse products
-              </Link>
+        {!ready ? (
+          <div className="cart-drawer-loading">
+            <i />
+            <i />
+            <i />
+          </div>
+        ) : items.length ? (
+          <>
+            <div className="cart-drawer-context">
+              <Truck size={16} />
+              <span>
+                Delivery options and final rates are confirmed at checkout.
+              </span>
             </div>
-          ) : (
-            <div className="space-y-4">
+
+            <div className="cart-drawer-items">
               {items.map((item) => (
-                <div
-                  key={item.key}
-                  className="flex items-center gap-3 rounded-2xl border border-slate-200 p-3"
-                >
-                  <div className="h-16 w-16 overflow-hidden rounded-xl bg-slate-100">
+                <article className="cart-drawer-item" key={item.key}>
+                  <Link
+                    href={`/products/${item.productId}`}
+                    className="cart-item-image"
+                    onClick={onClose}
+                    aria-label={`Open ${item.name}`}
+                  >
                     {item.image ? (
                       <Image
                         src={item.image}
                         alt={item.name}
-                        width={96}
-                        height={96}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="84px"
+                        className="object-cover"
                       />
-                    ) : null}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-800">
-                      {item.name}
-                    </p>
-                    {item.variantSku ? (
-                      <p className="text-xs text-slate-500">{item.variantSku}</p>
-                    ) : null}
-                    <p className="text-xs font-semibold text-slate-900">
-                      {formatMoney(item.price, item.currency || currency)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.key, item.quantity - 1)}
-                        className="h-6 w-6 rounded-full border border-slate-200 text-xs"
-                      >
-                        -
-                      </button>
-                      <span className="w-6 text-center text-xs">
-                        {item.quantity}
+                    ) : (
+                      <PackageOpen size={24} />
+                    )}
+                    <b>{item.quantity}</b>
+                  </Link>
+
+                  <div className="cart-item-content">
+                    <div className="cart-item-heading">
+                      <span>
+                        <Link
+                          href={`/products/${item.productId}`}
+                          onClick={onClose}
+                        >
+                          {item.name}
+                        </Link>
+                        {item.variantSku ? (
+                          <small>Variant: {item.variantSku}</small>
+                        ) : (
+                          <small>Standard product</small>
+                        )}
                       </span>
                       <button
                         type="button"
-                        onClick={() => updateQuantity(item.key, item.quantity + 1)}
-                        className="h-6 w-6 rounded-full border border-slate-200 text-xs"
+                        onClick={() => removeItem(item.key)}
+                        aria-label={`Remove ${item.name}`}
+                        title="Remove item"
                       >
-                        +
+                        <Trash2 size={15} />
                       </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.key)}
-                      className="text-[11px] font-semibold text-red-500"
-                    >
-                      Remove
-                    </button>
+
+                    <div className="cart-item-bottom">
+                      <div className="cart-item-quantity" aria-label="Quantity">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateQuantity(item.key, item.quantity - 1)
+                          }
+                          aria-label={`Decrease ${item.name} quantity`}
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <input
+                          type="number"
+                          min={1}
+                          value={item.quantity}
+                          onChange={(event) =>
+                            updateQuantity(
+                              item.key,
+                              Math.max(
+                                1,
+                                Math.floor(Number(event.target.value) || 1),
+                              ),
+                            )
+                          }
+                          aria-label={`${item.name} quantity`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateQuantity(item.key, item.quantity + 1)
+                          }
+                          aria-label={`Increase ${item.name} quantity`}
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+                      <span className="cart-item-pricing">
+                        <strong>
+                          {money(
+                            item.price * item.quantity,
+                            item.currency || currency,
+                          )}
+                        </strong>
+                        {item.quantity > 1 ? (
+                          <small>
+                            {money(item.price, item.currency || currency)} each
+                          </small>
+                        ) : null}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
-          )}
-        </div>
 
-        {items.length > 0 ? (
-          <div className="border-t border-slate-200 px-5 py-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold">{formatMoney(subtotal, currency)}</span>
-            </div>
-            <div className="mt-3 flex flex-col gap-2">
+            <footer className="cart-drawer-footer">
+              <div className="cart-drawer-subtotal">
+                <span>
+                  <strong>Subtotal</strong>
+                  <small>Taxes and delivery calculated at checkout</small>
+                </span>
+                <strong>{money(subtotal, currency)}</strong>
+              </div>
+
               <Link
                 href="/checkout"
-                className="rounded-full bg-deep px-5 py-3 text-center text-sm font-semibold text-white"
+                className="cart-checkout-button"
                 onClick={onClose}
               >
-                Checkout
+                Secure checkout
+                <ArrowRight size={17} />
               </Link>
-              <button
-                type="button"
-                onClick={clearCart}
-                className="rounded-full border border-slate-200 px-5 py-2 text-xs font-semibold text-slate-500"
-              >
-                Clear cart
-              </button>
-            </div>
+              <div className="cart-drawer-secondary-actions">
+                <Link href="/cart" onClick={onClose}>
+                  View full bag
+                </Link>
+                <button type="button" onClick={clearCart}>
+                  Clear bag
+                </button>
+              </div>
+              <p className="cart-drawer-assurance">
+                <ShieldCheck size={14} />
+                Inventory and pricing are rechecked before your order is placed.
+              </p>
+            </footer>
+          </>
+        ) : (
+          <div className="cart-drawer-empty">
+            <span>
+              <ShoppingBag size={30} />
+            </span>
+            <p>Your bag is empty</p>
+            <h2>Find something worth bringing home.</h2>
+            <small>
+              Browse the catalog, choose your options, and your items will
+              appear here.
+            </small>
+            <Link href="/products" onClick={onClose}>
+              Explore products
+              <ArrowRight size={16} />
+            </Link>
           </div>
-        ) : null}
-      </div>
+        )}
+      </aside>
     </div>
   );
-};
+}
 
-export default CartDrawer;

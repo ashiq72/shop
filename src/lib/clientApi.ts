@@ -63,3 +63,49 @@ export const apiGetClient = async <T>(
   if (!res.ok) throw new Error(await readError(res));
   return (await res.json()) as ApiResponse<T>;
 };
+
+export const getAccountToken = () => {
+  if (typeof document === "undefined") return "";
+  const entry = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith("shopAccessToken="));
+  return entry ? decodeURIComponent(entry.slice("shopAccessToken=".length)) : "";
+};
+
+export const apiAuthRequest = async <T>(
+  path: string,
+  options: RequestInit = {},
+) => {
+  const token = getAccountToken();
+  if (!token) throw new Error("Please sign in to continue");
+  const requestHeaders = new Headers(options.headers);
+  requestHeaders.set("Content-Type", "application/json");
+  requestHeaders.set("Authorization", `Bearer ${token}`);
+  if (TENANT_ID) requestHeaders.set("x-tenant-id", TENANT_ID);
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: requestHeaders,
+  });
+  if (!res.ok) throw new Error(await readError(res));
+  return (await res.json()) as ApiResponse<T>;
+};
+
+export const apiGetAuth = <T>(path: string) =>
+  apiAuthRequest<T>(path, { method: "GET", cache: "no-store" });
+
+export const apiPostAuth = <T>(path: string, body: unknown) =>
+  apiAuthRequest<T>(path, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+export const apiPatchAuth = <T>(path: string, body: unknown) =>
+  apiAuthRequest<T>(path, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
+export const apiDeleteAuth = <T>(path: string) =>
+  apiAuthRequest<T>(path, { method: "DELETE" });

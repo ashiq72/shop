@@ -4,9 +4,20 @@ import Link from "next/link";
 import { Heart, Trash2 } from "lucide-react";
 import ProductCard from "@/app/components/ProductCard";
 import { useWishlist } from "@/app/components/WishlistProvider";
+import { useAccount } from "@/app/components/AccountProvider";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function WishlistPage() {
   const { items, ready, clearWishlist } = useWishlist();
+  const { signedIn, ready: accountReady } = useAccount();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (accountReady && !signedIn) {
+      router.replace("/account/login?returnTo=%2Fwishlist");
+    }
+  }, [accountReady, router, signedIn]);
 
   if (!ready) {
     return <main className="store-shell store-state-page">Loading wishlist...</main>;
@@ -21,7 +32,7 @@ export default function WishlistPage() {
           <span>{items.length} saved products</span>
         </div>
         {items.length ? (
-          <button type="button" onClick={clearWishlist}>
+          <button type="button" onClick={() => void clearWishlist()}>
             <Trash2 size={16} />
             Clear wishlist
           </button>
@@ -45,4 +56,3 @@ export default function WishlistPage() {
     </main>
   );
 }
-

@@ -4,12 +4,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { PackageCheck, Search } from "lucide-react";
 import "./globals.css";
+import "./brands.css";
+import "./cart-drawer.css";
+import "./account-profile.css";
 import { apiGetSafe, getStoreTenantId } from "@/lib/api";
 import type { Branding, Category } from "@/lib/types";
 import { CartProvider } from "@/app/components/CartProvider";
 import HeaderActions from "@/app/components/HeaderActions";
 import { CartDrawerProvider } from "@/app/components/CartDrawerProvider";
 import { WishlistProvider } from "@/app/components/WishlistProvider";
+import { AccountProvider } from "@/app/components/AccountProvider";
 
 const bodyFont = Manrope({
   variable: "--font-manrope",
@@ -50,10 +54,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={bodyFont.variable}>
-        <CartProvider tenantId={getStoreTenantId()}>
-          <WishlistProvider tenantId={getStoreTenantId()}>
-            <CartDrawerProvider>
+      <body className={bodyFont.variable} suppressHydrationWarning>
+        <AccountProvider>
+          <CartProvider tenantId={getStoreTenantId()}>
+            <WishlistProvider>
+              <CartDrawerProvider>
             <div className="store-page">
               <header className="store-header">
                 {branding.announcement ? (
@@ -112,6 +117,7 @@ export default async function RootLayout({
                     <Link href="/products">Shop all</Link>
                     <Link href="/collections">Collections</Link>
                     <Link href="/campaigns">Offers</Link>
+                    <Link href="/brands">Brands</Link>
                     {navigationCategories.map((category) => (
                       <Link
                         key={category._id}
@@ -152,6 +158,7 @@ export default async function RootLayout({
                     <strong>Shop</strong>
                     <Link href="/products">All products</Link>
                     <Link href="/categories">Categories</Link>
+                    <Link href="/brands">Brands</Link>
                     <Link href="/collections">Collections</Link>
                     <Link href="/campaigns">Offers</Link>
                     <Link href="/wishlist">Wishlist</Link>
@@ -171,9 +178,10 @@ export default async function RootLayout({
                 </div>
               </footer>
             </div>
-            </CartDrawerProvider>
-          </WishlistProvider>
-        </CartProvider>
+              </CartDrawerProvider>
+            </WishlistProvider>
+          </CartProvider>
+        </AccountProvider>
       </body>
     </html>
   );

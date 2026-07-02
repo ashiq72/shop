@@ -4,6 +4,7 @@ import { ArrowRight, RefreshCcw, ShieldCheck, Truck } from "lucide-react";
 import { apiGetSafe } from "@/lib/api";
 import type {
   Campaign,
+  Brand,
   Category,
   Collection,
   Product,
@@ -19,6 +20,7 @@ export default async function Home() {
     categoriesResponse,
     collectionsResponse,
     campaignsResponse,
+    brandsResponse,
   ] =
     await Promise.all([
       apiGetSafe<Product[]>("/ecommerce/products?limit=12&inStock=true"),
@@ -26,6 +28,7 @@ export default async function Home() {
       apiGetSafe<Category[]>("/ecommerce/categories/tree"),
       apiGetSafe<Collection[]>("/ecommerce/collections/public?featured=true"),
       apiGetSafe<Campaign[]>("/ecommerce/campaigns/active?featured=true"),
+      apiGetSafe<Brand[]>("/ecommerce/brands/public?featured=true"),
     ]);
 
   const products = productsResponse.data || [];
@@ -33,6 +36,7 @@ export default async function Home() {
   const categories = (categoriesResponse.data || []).slice(0, 8);
   const collections = (collectionsResponse.data || []).slice(0, 3);
   const campaigns = (campaignsResponse.data || []).slice(0, 1);
+  const brands = (brandsResponse.data || []).slice(0, 8);
   const saleProducts = products
     .filter(
       (product) =>
@@ -170,6 +174,41 @@ export default async function Home() {
                   <strong>{collection.name}</strong>
                   <small>{collection.description || "Explore collection"}</small>
                 </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {brands.length ? (
+        <section className="store-section store-shell home-brands-section">
+          <div className="store-section-heading">
+            <div>
+              <p>Trusted makers</p>
+              <h2>Featured brands</h2>
+            </div>
+            <Link href="/brands">
+              View all brands
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+          <div className="home-brand-grid">
+            {brands.map((brand) => (
+              <Link key={brand._id} href={`/brands/${brand.slug}`}>
+                <span className="home-brand-logo">
+                  {brand.logo ? (
+                    <Image
+                      src={brand.logo}
+                      alt={brand.name}
+                      fill
+                      sizes="120px"
+                      className="object-contain"
+                    />
+                  ) : (
+                    <strong>{brand.name.slice(0, 1).toUpperCase()}</strong>
+                  )}
+                </span>
+                <strong>{brand.name}</strong>
               </Link>
             ))}
           </div>

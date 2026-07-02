@@ -10,74 +10,129 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import type { Product } from "@/lib/types";
+import {
+  apiDeleteAuth,
+  apiGetAuth,
+  apiPostAuth,
+} from "@/lib/clientApi";
+import { useAccount } from "@/app/components/AccountProvider";
 
 type WishlistContextValue = {
   items: Product[];
   ready: boolean;
   hasItem: (id: string) => boolean;
-  toggleItem: (product: Product) => void;
-  removeItem: (id: string) => void;
-  clearWishlist: () => void;
+  toggleItem: (product: Product) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  clearWishlist: () => Promise<void>;
+  refreshWishlist: () => Promise<void>;
 };
 
 const WishlistContext = createContext<WishlistContextValue | undefined>(
   undefined,
 );
 
-export function WishlistProvider({
-  children,
-  tenantId,
-}: {
-  children: ReactNode;
-  tenantId: string;
-}) {
+export function WishlistProvider({ children }: { children: ReactNode }) {
+  const { ready: accountReady, signedIn } = useAccount();
   const [items, setItems] = useState<Product[]>([]);
   const [ready, setReady] = useState(false);
-  const storageKey = `commerce360_wishlist_${tenantId || "store"}`;
 
-  useEffect(() => {
+  const refreshWishlist = useCallback(async () => {
+    if (!signedIn) {
+      setItems([]);
+      setReady(accountReady);
+      return;
+    }
     try {
-      const raw = localStorage.getItem(storageKey);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) setItems(parsed);
+      const response = await apiGetAuth<Product[]>("/ecommerce/wishlist");
+      setItems(response.data || []);
     } catch {
       setItems([]);
     } finally {
       setReady(true);
     }
-  }, [storageKey]);
+  }, [accountReady, signedIn]);
 
   useEffect(() => {
-    if (!ready) return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(items));
-    } catch {
-      // Wishlist remains available for the current browser session.
-    }
-  }, [items, ready, storageKey]);
+    const handleWishlistChanged = () => {
+      void refreshWishlist();
+    };
+
+    void refreshWishlist();
+    window.addEventListener(
+      "commerce360-wishlist-changed",
+      handleWishlistChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "commerce360-wishlist-changed",
+        handleWishlistChanged,
+      );
+    };
+  }, [refreshWishlist]);
 
   const hasItem = useCallback(
     (id: string) => items.some((item) => item._id === id),
     [items],
   );
 
-  const toggleItem = useCallback((product: Product) => {
-    setItems((current) =>
-      current.some((item) => item._id === product._id)
-        ? current.filter((item) => item._id !== product._id)
-        : [...current, product],
+  const toggleItem = useCallback(
+    async (product: Product) => {
+      const exists = items.some((item) => item._id === product._id);
+      const previous = items;
+      setItems((current) =>
+        exists
+          ? current.filter((item) => item._id !== product._id)
+          : [...current, product],
+      );
+      try {
+        const response = exists
+          ? await apiDeleteAuth<Product[]>(
+              `/ecommerce/wishlist/${product._id}`,
+            )
+          : await apiPostAuth<Product[]>("/ecommerce/wishlist", {
+              productId: product._id,
+            });
+        setItems(response.data || []);
+      } catch (error) {
+        setItems(previous);
+        throw error;
+      }
+    },
+    [items],
+  );
+
+  const removeItem = useCallback(async (id: string) => {
+    const response = await apiDeleteAuth<Product[]>(
+      `/ecommerce/wishlist/${id}`,
     );
+    setItems(response.data || []);
   }, []);
 
-  const removeItem = useCallback((id: string) => {
-    setItems((current) => current.filter((item) => item._id !== id));
+  const clearWishlist = useCallback(async () => {
+    await apiDeleteAuth<Product[]>("/ecommerce/wishlist/clear");
+    setItems([]);
   }, []);
-
-  const clearWishlist = useCallback(() => setItems([]), []);
 
   const value = useMemo(
-    () => ({ items, ready, hasItem, toggleItem, removeItem, clearWishlist }),
-    [items, ready, hasItem, toggleItem, removeItem, clearWishlist],
+    () => ({
+      items,
+      ready,
+      hasItem,
+      toggleItem,
+      removeItem,
+      clearWishlist,
+      refreshWishlist,
+    }),
+    [
+      clearWishlist,
+      hasItem,
+      items,
+      ready,
+      refreshWishlist,
+      removeItem,
+      toggleItem,
+    ],
   );
 
   return (

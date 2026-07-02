@@ -1,44 +1,63 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import CartDrawer from "@/app/components/CartDrawer";
 
 type CartDrawerContextValue = {
-  open: boolean;
+  isOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  toggleDrawer: () => void;
 };
 
 const CartDrawerContext = createContext<CartDrawerContextValue | undefined>(
   undefined,
 );
 
-export const CartDrawerProvider = ({ children }: { children: ReactNode }) => {
-  const [open, setOpen] = useState(false);
+export function CartDrawerProvider({ children }: { children: ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const openDrawer = useCallback(() => setIsOpen(true), []);
+  const closeDrawer = useCallback(() => setIsOpen(false), []);
 
-  const openDrawer = useCallback(() => setOpen(true), []);
-  const closeDrawer = useCallback(() => setOpen(false), []);
-  const toggleDrawer = useCallback(() => setOpen((prev) => !prev), []);
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeDrawer();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeDrawer, isOpen]);
 
   const value = useMemo(
-    () => ({ open, openDrawer, closeDrawer, toggleDrawer }),
-    [open, openDrawer, closeDrawer, toggleDrawer],
+    () => ({ isOpen, openDrawer, closeDrawer }),
+    [closeDrawer, isOpen, openDrawer],
   );
 
   return (
     <CartDrawerContext.Provider value={value}>
       {children}
-      <CartDrawer open={open} onClose={closeDrawer} />
+      <CartDrawer open={isOpen} onClose={closeDrawer} />
     </CartDrawerContext.Provider>
   );
-};
+}
 
-export const useCartDrawer = () => {
-  const ctx = useContext(CartDrawerContext);
-  if (!ctx) {
+export function useCartDrawer() {
+  const context = useContext(CartDrawerContext);
+  if (!context) {
     throw new Error("useCartDrawer must be used within CartDrawerProvider");
   }
-  return ctx;
-};
+  return context;
+}
+

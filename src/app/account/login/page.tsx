@@ -12,6 +12,8 @@ import {
   Mail,
 } from "lucide-react";
 import { loginAccount } from "@/lib/authClient";
+import { apiPostAuth } from "@/lib/clientApi";
+import type { Product } from "@/lib/types";
 
 export default function ShopLoginPage() {
   const router = useRouter();
@@ -27,7 +29,28 @@ export default function ShopLoginPage() {
     setError("");
     try {
       await loginAccount(email, password);
-      router.replace("/");
+      const pendingProductId = sessionStorage.getItem(
+        "pending_wishlist_product",
+      );
+      if (pendingProductId) {
+        try {
+          await apiPostAuth<Product[]>("/ecommerce/wishlist", {
+            productId: pendingProductId,
+          });
+          sessionStorage.removeItem("pending_wishlist_product");
+          window.dispatchEvent(new Event("commerce360-wishlist-changed"));
+        } catch {
+          // Keep the pending product so the customer can retry after sign-in.
+        }
+      }
+      const requestedPath = new URLSearchParams(window.location.search).get(
+        "returnTo",
+      );
+      const destination =
+        requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
+          ? requestedPath
+          : "/account/profile";
+      router.replace(destination);
       router.refresh();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed";
@@ -106,4 +129,3 @@ export default function ShopLoginPage() {
     </main>
   );
 }
-

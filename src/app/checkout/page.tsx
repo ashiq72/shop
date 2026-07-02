@@ -1,5 +1,6 @@
 "use client";
 
+import { postCheckoutOrder as apiPost } from "@/lib/orderClient";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -14,7 +15,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useCart } from "@/app/components/CartProvider";
-import { apiGetClient, apiPost } from "@/lib/clientApi";
+import { apiGetClient } from "@/lib/clientApi";
 import type { CheckoutQuote, ShippingMethod } from "@/lib/types";
 
 const formatMoney = (amount: number, currency = "USD") =>
